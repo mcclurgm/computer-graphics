@@ -13,7 +13,8 @@ void mat22Print(const double m[2][2]) {
 }
 
 double determinant2by2(const double m[2][2]) {
-	return(m[0][0] * m[1][1]) - (m[0][1] * m[1][0]);
+	double det = (m[0][0] * m[1][1]) - (m[0][1] * m[1][0]);
+	return det;
 }
 
 /* Returns the determinant of the matrix m. If the determinant is 0.0, then the 
@@ -27,6 +28,8 @@ double mat22Invert(const double m[2][2], double mInv[2][2]) {
 	mInv[0][1] = -1 * m[0][1] / det;
 	mInv[1][0] = -1 * m[1][0] / det;
 	mInv[1][1] = m[0][0] / det;
+	
+	return det;
 }
 
 /* Multiplies a 2x2 matrix m by a 2-column v, storing the result in mTimesV. 

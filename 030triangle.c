@@ -36,23 +36,45 @@ double findyBound(const double a[2], const double b[2], int x0, int upper){
     return y;
 }
 
-void findPQ(const double x[2], const double a[2], const double b[2], const double c[2], double pq[2]) {
-    double bMinusA[2], cMinusA[2], m[2], det;
+void findPQ(const double x[2], const double a[2], const double b[2], 
+        const double c[2], double pq[2]) {
+    double bMinusA[2], cMinusA[2], m[2][2], det;
     vecSubtract(2, b, a, bMinusA);
     vecSubtract(2, c, a, cMinusA);
     
     det = determinant2by2(m);
     if(det > 0) {
         //  Create matrix m from its columns
-        double xMinusA[2], pq[2];
+        double xMinusA[2];
         vecSubtract(2, x, a, xMinusA);
-        
-        double mInv[2];
+
+        double mInv[2][2];
         mat22Columns(bMinusA, cMinusA, m);
         mat22Invert(m, mInv);
         
         mat221Multiply(mInv, xMinusA, pq);
     }
+    
+}
+
+void findRGB(const double alpha[3], const double beta[3], 
+        const double gamma[3], const double pq[2], const double rgb[3],
+        double finalRGB[3]) {
+    double betaMinusAlpha[3], gammaMinusAlpha[3], scaledP[3], scaledQ[3], pPlusQ[3];
+    
+    vecSubtract(3, beta, alpha, betaMinusAlpha);
+    vecSubtract(3, gamma, alpha, gammaMinusAlpha);
+
+    
+    vecScale(3, pq[0], betaMinusAlpha, scaledP);
+    vecScale(3, pq[1], gammaMinusAlpha, scaledQ);
+    
+    vecAdd(3, scaledP, scaledQ, pPlusQ);
+    vecAdd(3, alpha, pPlusQ, finalRGB);
+    
+//     finalRGB[0] = finalRGB[0] * rgb[0];
+//     finalRGB[1] = finalRGB[1] * rgb[1];
+//     finalRGB[2] = finalRGB[2] * rgb[2];
 }
 
 /*triRender takes 3 points on the initialized graphics and creates a triangle with the given RGB
@@ -69,17 +91,24 @@ void triRender(const double a[2], const double b[2], const double c[2],
         int x0;
         int lowery;
         int uppery;
+
+        double pq[2], pointRGB[3];
         
         //1st case where the location "b" is to the right of "c"
         if(b[0] > c[0]) {
+            printf("Case 1\n");
             //1st loop from the leftmost point, "a", until we get to c0
             for(x0 = (int)ceil(a[0]); x0 <= (int)floor(c[0]); x0 = x0 + 1){
                 //find upper and lower values of y and then fill in all pixels between them
                 lowery = (int)ceil(findyBound(a, b, x0, 0));
                 uppery = (int)floor(findyBound(a, c, x0, 1));
                 int y;
-                for(y = lowery; y <= uppery; y = y + 1){
-                    pixSetRGB(x0, y, rgb[0], rgb[1], rgb[2]);
+                for(y = lowery; y <= uppery; y = y + 1) {
+                    double currentX[2] = {(double)x0, (double)y};
+                    findPQ(currentX, a, b, c, pq);
+                    findRGB(alpha, beta, gamma, pq, rgb, pointRGB);
+                    
+                    pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
             
@@ -91,13 +120,19 @@ void triRender(const double a[2], const double b[2], const double c[2],
                 
                 int y;
                 for(y = lowery; y <= uppery; y = y + 1) {
-                    pixSetRGB(x0, y, rgb[0], rgb[1], rgb[2]);
+                    double currentX[2] = {(double)x0, (double)y};
+                    findPQ(currentX, a, b, c, pq);
+                    findRGB(alpha, beta, gamma, pq, rgb, pointRGB);
+                    
+                    pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
         }
         
         //2nd case where the location "b" is to the left of "c"
         else {
+            printf("Case 2\n");
+
             //1st loop from the leftmost point, a0, to b0
             for(x0 = (int)ceil(a[0]); x0 <= (int)floor(b[0]); x0 = x0 + 1){
                 //find upper and lower values of y and then fill in all pixels between them
@@ -105,8 +140,11 @@ void triRender(const double a[2], const double b[2], const double c[2],
                 uppery = (int)floor(findyBound(a, c, x0, 1));
                 int y;
                 for(y = lowery; y <= uppery; y = y + 1){
-                    //            printf("x0: %i, y: %i\n", x0, y);
-                    pixSetRGB(x0, y, rgb[0], rgb[1], rgb[2]);
+                    double currentX[2] = {(double)x0, (double)y};
+                    findPQ(currentX, a, b, c, pq);
+                    findRGB(alpha, beta, gamma, pq, rgb, pointRGB);
+                    
+                    pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
             
@@ -118,8 +156,11 @@ void triRender(const double a[2], const double b[2], const double c[2],
                 
                 int y;
                 for(y = lowery; y <= uppery; y = y + 1) {
-                    //            printf("x0: %i, y: %i\n", x0, y);
-                    pixSetRGB(x0, y, rgb[0], rgb[1], rgb[2]);
+                    double currentX[2] = {(double)x0, (double)y};
+                    findPQ(currentX, a, b, c, pq);
+                    findRGB(alpha, beta, gamma, pq, rgb, pointRGB);
+                    
+                    pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
         }
