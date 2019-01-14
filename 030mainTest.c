@@ -16,7 +16,7 @@
 double a[2] = {144.0, 10.0};
 double b[2] = {244.0, 244.0};
 double c[2] = {26.0, 400.0};
-double rgb[3] = {1.0, 1.0, 0.0};
+double rgb[3] = {1.0, 1.0, 1.0};
 double angle = 0.0;
 double alpha[3] = {1.0, 0.0, 0.0};
 double beta[3] = {0.0, 1.0, 0.0};

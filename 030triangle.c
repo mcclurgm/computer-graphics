@@ -39,25 +39,13 @@ double findyBound(const double a[2], const double b[2], int x0, int upper){
 /* Finds the values p and q that are used in the interpolation algorithm.
 Returns in vector form, [p q].
 */
-void findPQ(const double x[2], const double a[2], const double b[2], 
-        const double c[2], double pq[2]) {
-    double bMinusA[2], cMinusA[2], m[2][2], det;
-    vecSubtract(2, b, a, bMinusA);
-    vecSubtract(2, c, a, cMinusA);
-    
-    det = determinant2by2(m);
-    if(det > 0) {
-        //  Create matrix m from its columns
-        double xMinusA[2];
-        vecSubtract(2, x, a, xMinusA);
+void findPQ(const double x[2], const double a[2], double mInv[2][2], 
+        double pq[2]) {
 
-        double mInv[2][2];
-        mat22Columns(bMinusA, cMinusA, m);
-        mat22Invert(m, mInv);
-        
-        mat221Multiply(mInv, xMinusA, pq);
-    }
-    
+    double xMinusA[2];
+    vecSubtract(2, x, a, xMinusA);
+
+    mat221Multiply(mInv, xMinusA, pq);
 }
 
 /* Calculates the interpolated and modulated color to use at a point.
@@ -66,6 +54,7 @@ It takes its position element from the pq vector.
 void findRGB(const double alpha[3], const double beta[3], 
         const double gamma[3], const double pq[2], const double rgb[3],
         double finalRGB[3]) {
+    
     double betaMinusAlpha[3], gammaMinusAlpha[3], scaledP[3], scaledQ[3], pPlusQ[3];
     
     vecSubtract(3, beta, alpha, betaMinusAlpha);
@@ -90,13 +79,28 @@ void triRender(const double a[2], const double b[2], const double c[2],
                const double gamma[3]) {
     //Check if the location in position "a" is the left most point, if not recall triRender in a
     //different order.
-    if(b[0] < a[0] || c[0] < a[0]) {
+    if(b[0] < a[0]) {
         triRender(b, c, a, rgb, beta, gamma, alpha);
+    } else if(c[0] < a[0]) {
+        triRender(c, a, b, rgb, gamma, alpha, beta);
     } else {
         int x0;
         int lowery;
         int uppery;
+        
+//TODO  invert m, find determinant.
+//      Generate m from its columns
+        double bMinusA[2], cMinusA[2], m[2][2], mInv[2][2], det;
+        vecSubtract(2, b, a, bMinusA);
+        vecSubtract(2, c, a, cMinusA);
+        mat22Columns(bMinusA, cMinusA, m);
 
+//      Check if m is an invertible matrix; break if not.
+        det = mat22Invert(m, mInv);
+        if(det == 0) {
+            return;
+        }
+    
         double pq[2], pointRGB[3];
         
         //1st case where the location "b" is to the right of "c"
@@ -110,7 +114,7 @@ void triRender(const double a[2], const double b[2], const double c[2],
                 int y;
                 for(y = lowery; y <= uppery; y = y + 1) {
                     double currentX[2] = {(double)x0, (double)y};
-                    findPQ(currentX, a, b, c, pq);
+                    findPQ(currentX, a, mInv, pq);
                     findRGB(alpha, beta, gamma, pq, rgb, pointRGB);
                     
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
@@ -126,7 +130,7 @@ void triRender(const double a[2], const double b[2], const double c[2],
                 int y;
                 for(y = lowery; y <= uppery; y = y + 1) {
                     double currentX[2] = {(double)x0, (double)y};
-                    findPQ(currentX, a, b, c, pq);
+                    findPQ(currentX, a, mInv, pq);
                     findRGB(alpha, beta, gamma, pq, rgb, pointRGB);
                     
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
@@ -146,7 +150,7 @@ void triRender(const double a[2], const double b[2], const double c[2],
                 int y;
                 for(y = lowery; y <= uppery; y = y + 1){
                     double currentX[2] = {(double)x0, (double)y};
-                    findPQ(currentX, a, b, c, pq);
+                    findPQ(currentX, a, mInv, pq);
                     findRGB(alpha, beta, gamma, pq, rgb, pointRGB);
                     
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
@@ -162,7 +166,7 @@ void triRender(const double a[2], const double b[2], const double c[2],
                 int y;
                 for(y = lowery; y <= uppery; y = y + 1) {
                     double currentX[2] = {(double)x0, (double)y};
-                    findPQ(currentX, a, b, c, pq);
+                    findPQ(currentX, a, mInv, pq);
                     findRGB(alpha, beta, gamma, pq, rgb, pointRGB);
                     
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
