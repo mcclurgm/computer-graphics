@@ -1,6 +1,8 @@
 
 
-/*** 2 x 2 Matrices ***/
+/*** 2 x 2 Matrices 
+Michael McClurg and Vermilion Villarreal
+***/
 
 /* Pretty-prints the given matrix, with one line of text per row of matrix. */
 void mat22Print(const double m[2][2]) {

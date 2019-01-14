@@ -20,10 +20,10 @@ int main(void){
         return 1;
     } else {
         pixClearRGB(0.0, 0.0, 0.0);
-        double A[2] = {144.0, 10.0};
-        double B[2] = {244.0, 244.0};
-        double C[2] = {26.0, 400.0};
-        double rgb[3] = {1.0,1.0,0.0};
+        double A[2] = {10.0, 10.0};
+        double B[2] = {400.0, 244.0};
+        double C[2] = {250.0, 400.0};
+        double rgb[3] = {.6, .3, .9};
         double alpha[3] = {1.0, 0.0, 0.0};
         double beta[3] = {0.0, 1.0, 0.0};
         double gamma[3] = {0.0, 0.0, 1.0};

@@ -36,6 +36,9 @@ double findyBound(const double a[2], const double b[2], int x0, int upper){
     return y;
 }
 
+/* Finds the values p and q that are used in the interpolation algorithm.
+Returns in vector form, [p q].
+*/
 void findPQ(const double x[2], const double a[2], const double b[2], 
         const double c[2], double pq[2]) {
     double bMinusA[2], cMinusA[2], m[2][2], det;
@@ -57,6 +60,9 @@ void findPQ(const double x[2], const double a[2], const double b[2],
     
 }
 
+/* Calculates the interpolated and modulated color to use at a point.
+It takes its position element from the pq vector.
+*/
 void findRGB(const double alpha[3], const double beta[3], 
         const double gamma[3], const double pq[2], const double rgb[3],
         double finalRGB[3]) {
@@ -64,7 +70,6 @@ void findRGB(const double alpha[3], const double beta[3],
     
     vecSubtract(3, beta, alpha, betaMinusAlpha);
     vecSubtract(3, gamma, alpha, gammaMinusAlpha);
-
     
     vecScale(3, pq[0], betaMinusAlpha, scaledP);
     vecScale(3, pq[1], gammaMinusAlpha, scaledQ);
@@ -72,9 +77,9 @@ void findRGB(const double alpha[3], const double beta[3],
     vecAdd(3, scaledP, scaledQ, pPlusQ);
     vecAdd(3, alpha, pPlusQ, finalRGB);
     
-//     finalRGB[0] = finalRGB[0] * rgb[0];
-//     finalRGB[1] = finalRGB[1] * rgb[1];
-//     finalRGB[2] = finalRGB[2] * rgb[2];
+    finalRGB[0] = finalRGB[0] * rgb[0];
+    finalRGB[1] = finalRGB[1] * rgb[1];
+    finalRGB[2] = finalRGB[2] * rgb[2];
 }
 
 /*triRender takes 3 points on the initialized graphics and creates a triangle with the given RGB

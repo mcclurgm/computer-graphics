@@ -1,6 +1,8 @@
 
 
-/*** In general dimensions ***/
+/*** In general dimensions 
+Michael McClurg and Vermilion Villarreal
+***/
 
 /* Copies the dim-dimensional vector v to the dim-dimensional vector copy. */
 void vecCopy(int dim, const double v[], double copy[]) {
