@@ -1,6 +1,5 @@
 
 
-
 /*** 2 x 2 Matrices ***/
 
 /* Pretty-prints the given matrix, with one line of text per row of matrix. */
@@ -65,10 +64,3 @@ void mat22Rotation(double theta, double m[2][2]) {
 	m[1][0] = sinTh;
 	m[1][1] = cosTh;
 }
-
-int main(int argc, char const *argv[])
-{
-	/* code */
-	return 0;
-}
-
