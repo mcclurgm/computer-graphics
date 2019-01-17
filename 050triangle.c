@@ -48,65 +48,38 @@ void findPQ(const double x[2], const double a[2], double mInv[2][2],
     mat221Multiply(mInv, xMinusA, pq);
 }
 
-/* Calculates the interpolated and modulated color to use at a point.
-It takes its position element from the pq vector.
-*/
-void findRGB(const double alpha[3], const double beta[3], 
-        const double gamma[3], const double pq[2], const double rgb[3],
-        double finalRGB[3]) {
+void interpolateAttr(const int attrDim, const double a[], const double b[], const double c[],
+        const double pq[2], const double x[2], double attr[]) {
     
-    double betaMinusAlpha[3], gammaMinusAlpha[3], scaledP[3], scaledQ[3], pPlusQ[3];
+//  Declare all the vectors we need to do the linear equation
+    double bMinusA[attrDim], cMinusA[attrDim], scaledP[attrDim], scaledQ[attrDim], pPlusQ[attrDim], st[attrDim];
     
-    vecSubtract(3, beta, alpha, betaMinusAlpha);
-    vecSubtract(3, gamma, alpha, gammaMinusAlpha);
+    vecSubtract(attrDim, b, a, bMinusA);
+    vecSubtract(attrDim, c, a, cMinusA);
     
-    vecScale(3, pq[0], betaMinusAlpha, scaledP);
-    vecScale(3, pq[1], gammaMinusAlpha, scaledQ);
+    vecScale(attrDim, pq[0], bMinusA, scaledP);
+    vecScale(attrDim, pq[1], cMinusA, scaledQ);
     
-    vecAdd(3, scaledP, scaledQ, pPlusQ);
-    vecAdd(3, alpha, pPlusQ, finalRGB);
+    vecAdd(attrDim, scaledP, scaledQ, pPlusQ);
+    vecAdd(attrDim, a, pPlusQ, attr);
     
-    finalRGB[0] = finalRGB[0] * rgb[0];
-    finalRGB[1] = finalRGB[1] * rgb[1];
-    finalRGB[2] = finalRGB[2] * rgb[2];
-}
-
-void findTextureColor(const double alpha[2], const double beta[2], const double gamma[2],
-        const double pq[2], const double rgb[3], const texTexture *tex,
-        double finalRGB[3]) {
-    
-    // Get interpolated points in texture space, in vector st[2]
-    double betaMinusAlpha[2], gammaMinusAlpha[2], scaledP[2], scaledQ[2], pPlusQ[2], st[2];
-    
-    vecSubtract(2, beta, alpha, betaMinusAlpha);
-    vecSubtract(2, gamma, alpha, gammaMinusAlpha);
-    
-    vecScale(2, pq[0], betaMinusAlpha, scaledP);
-    vecScale(2, pq[1], gammaMinusAlpha, scaledQ);
-    
-    vecAdd(2, scaledP, scaledQ, pPlusQ);
-    vecAdd(2, alpha, pPlusQ, st);
-    
-    // Get texel at this point
-    texSample(tex, st[0], st[1], finalRGB);
-    
-    finalRGB[0] = finalRGB[0] * rgb[0];
-    finalRGB[1] = finalRGB[1] * rgb[1];
-    finalRGB[2] = finalRGB[2] * rgb[2];
+//  Set the first two elements of attr, which are the current rasterizing coordinates
+    attr[0] = x[0];
+    attr[1] = x[1];
 }
 
 /*triRender takes 3 points on the initialized graphics and creates a triangle with the given RGB
   value. All triangles must be counterclockwise and are then formed into one of two base cases before
   being drawn. */
-void triRender(const double a[2], const double b[2], const double c[2],
-               const double rgb[3], const texTexture *tex, const double alpha[2], const double beta[2],
-               const double gamma[2]) {
+void triRender(const shaShading *sha,
+        const double unif[], const texTexture *tex[],
+        const double a[], const double b[], const double c[]) {
     //Check if the location in position "a" is the left most point, if not recall triRender in a
     //different order.
     if(b[0] < a[0]) {
-        triRender(b, c, a, rgb, tex, beta, gamma, alpha);
+        triRender(sha, unif, tex, b, c, a);
     } else if(c[0] < a[0]) {
-        triRender(c, a, b, rgb, tex, gamma, alpha, beta);
+        triRender(sha, unif, tex, c, a, b);
     } else {
         int x0;
         int lowery;
@@ -114,8 +87,12 @@ void triRender(const double a[2], const double b[2], const double c[2],
         
 //      Generate m from its columns
         double bMinusA[2], cMinusA[2], m[2][2], mInv[2][2], det;
-        vecSubtract(2, b, a, bMinusA);
-        vecSubtract(2, c, a, cMinusA);
+        double aCoord[2] = {a[0], a[1]};
+        double bCoord[2] = {b[0], b[1]};
+        double cCoord[2] = {c[0], c[1]};
+        
+        vecSubtract(2, bCoord, aCoord, bMinusA);
+        vecSubtract(2, cCoord, aCoord, cMinusA);
         mat22Columns(bMinusA, cMinusA, m);
 
 //      Check if m is an invertible matrix; break if not.
@@ -124,7 +101,7 @@ void triRender(const double a[2], const double b[2], const double c[2],
             return;
         }
     
-        double pq[2], pointRGB[3];
+        double pq[2], pointRGB[3], attr[sha->attrDim];
         
         //1st case where the location "b" is to the right of "c"
         if(b[0] > c[0]) {
@@ -137,8 +114,9 @@ void triRender(const double a[2], const double b[2], const double c[2],
                 for(y = lowery; y <= uppery; y = y + 1) {
                     double currentX[2] = {(double)x0, (double)y};
                     findPQ(currentX, a, mInv, pq);
-                    findTextureColor(alpha, beta, gamma, pq, rgb, tex, pointRGB);
+                    interpolateAttr(sha->attrDim, a, b, c, pq, currentX, attr);
                     
+                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->attrDim, attr, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
@@ -153,8 +131,9 @@ void triRender(const double a[2], const double b[2], const double c[2],
                 for(y = lowery; y <= uppery; y = y + 1) {
                     double currentX[2] = {(double)x0, (double)y};
                     findPQ(currentX, a, mInv, pq);
-                    findTextureColor(alpha, beta, gamma, pq, rgb, tex, pointRGB);
+                    interpolateAttr(sha->attrDim, a, b, c, pq, currentX, attr);
                     
+                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->attrDim, attr, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
@@ -171,8 +150,9 @@ void triRender(const double a[2], const double b[2], const double c[2],
                 for(y = lowery; y <= uppery; y = y + 1){
                     double currentX[2] = {(double)x0, (double)y};
                     findPQ(currentX, a, mInv, pq);
-                    findTextureColor(alpha, beta, gamma, pq, rgb, tex, pointRGB);
+                    interpolateAttr(sha->attrDim, a, b, c, pq, currentX, attr);
                     
+                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->attrDim, attr, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
@@ -187,8 +167,9 @@ void triRender(const double a[2], const double b[2], const double c[2],
                 for(y = lowery; y <= uppery; y = y + 1) {
                     double currentX[2] = {(double)x0, (double)y};
                     findPQ(currentX, a, mInv, pq);
-                    findTextureColor(alpha, beta, gamma, pq, rgb, tex, pointRGB);
+                    interpolateAttr(sha->attrDim, a, b, c, pq, currentX, attr);
                     
+                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->attrDim, attr, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
