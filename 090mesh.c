@@ -265,9 +265,9 @@ void meshRender(const meshMesh *mesh, const shaShading *sha,
 	    
 // 	    Transform varying arrays
         double vary0[sha->varyDim], vary1[sha->varyDim], vary2[sha->varyDim];
-        transformVertex(sha->unifDim, unif, sha->attrDim, vert0, sha->varyDim, vary0);
-        transformVertex(sha->unifDim, unif, sha->attrDim, vert1, sha->varyDim, vary1);
-        transformVertex(sha->unifDim, unif, sha->attrDim, vert2, sha->varyDim, vary2);
+        sha->transformVertex(sha->unifDim, unif, sha->attrDim, vert0, sha->varyDim, vary0);
+        sha->transformVertex(sha->unifDim, unif, sha->attrDim, vert1, sha->varyDim, vary1);
+        sha->transformVertex(sha->unifDim, unif, sha->attrDim, vert2, sha->varyDim, vary2);
 	    
 // 	    Call triRender on this triangle
         triRender(sha, unif, tex, vary0, vary1, vary2);

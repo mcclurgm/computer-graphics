@@ -116,7 +116,7 @@ void triRender(const shaShading *sha,
                     findPQ(currentX, a, mInv, pq);
                     interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
                     
-                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
+                    sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
@@ -133,7 +133,7 @@ void triRender(const shaShading *sha,
                     findPQ(currentX, a, mInv, pq);
                     interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
                     
-                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
+                    sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
@@ -152,7 +152,7 @@ void triRender(const shaShading *sha,
                     findPQ(currentX, a, mInv, pq);
                     interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
                     
-                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
+                    sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
@@ -169,7 +169,7 @@ void triRender(const shaShading *sha,
                     findPQ(currentX, a, mInv, pq);
                     interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
                     
-                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
+                    sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
