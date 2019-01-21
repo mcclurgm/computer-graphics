@@ -48,14 +48,15 @@ void colorPixel(int unifDim, const double unif[], int texNum,
 	double sample[3];
 	texSample(tex[0], attr[2], attr[3], sample);
 	
-	rgb[0] = sample[0] * attr[4] * unif[0];
-	rgb[1] = sample[1] * attr[5] * unif[1];
-	rgb[2] = sample[2] * attr[6] * unif[2];
+	rgb[0] = sample[0] * unif[0];
+	rgb[1] = sample[1] * unif[1];
+	rgb[2] = sample[2] * unif[2];
 }
 
 /* We have to include 050triangle.c after defining colorPixel, because it 
 refers to colorPixel. (Later in the course we handle this issue better.) */
 #include "050triangle.c"
+#include "070mesh.c"
 
 /* This struct is initialized in main() below. */
 shaShading sha;
@@ -67,13 +68,12 @@ texTexture texture;
 const texTexture *textures[1] = {&texture};
 const texTexture **tex = textures;
 
+meshMesh mesh;
+
 void draw(void) {
 	pixClearRGB(0.0, 0.0, 0.0);
-	double a[7] = {400.0, 100.0, 1.0, 1.0, 1.0, 0.0, 0.0};
-	double b[7] = {500.0, 500.0, 0.0, 1.0, 0.0, 1.0, 0.0};
-	double c[7] = {30.0, 30.0, 0.0, 0.0, 0.0, 0.0, 1.0};
 	double unif[3] = {1.0, 1.0, 1.0};
-	triRender(&sha, unif, tex, a, b, c);
+	meshRender(&mesh, &sha, unif, tex);
 }
 
 void handleKeyUp(int key, int shiftIsDown, int controlIsDown, 
@@ -99,18 +99,22 @@ int main(void) {
 		if (texInitializeFile(&texture, "zuck.jpg") != 0)
 			return 2;
 		else {
-			texSetFiltering(&texture, texNEAREST);
-			texSetLeftRight(&texture, texREPEAT);
-			texSetTopBottom(&texture, texREPEAT);
-			sha.unifDim = 3;
-			sha.attrDim = 2 + 2 + 3;
-			sha.texNum = 1;
-			draw();
-			pixSetKeyUpHandler(handleKeyUp);
-			pixSetTimeStepHandler(handleTimeStep);
-			pixRun();
-			texDestroy(&texture);
-			return 0;
+		    if(meshInitializeEllipse(&mesh, 250, 250, 100, 100, 5) != 0) {
+		        return 3;
+		    } else {
+			    texSetFiltering(&texture, texNEAREST);
+			    texSetLeftRight(&texture, texREPEAT);
+			    texSetTopBottom(&texture, texREPEAT);
+			    sha.unifDim = 3;
+			    sha.attrDim = 2 + 2;
+			    sha.texNum = 1;
+			    draw();
+			    pixSetKeyUpHandler(handleKeyUp);
+			    pixSetTimeStepHandler(handleTimeStep);
+			    pixRun();
+			    texDestroy(&texture);
+			    return 0;
+			}
 		}
 	}
 }
