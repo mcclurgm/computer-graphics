@@ -48,24 +48,24 @@ void findPQ(const double x[2], const double a[2], double mInv[2][2],
     mat221Multiply(mInv, xMinusA, pq);
 }
 
-void interpolateAttr(const int attrDim, const double a[], const double b[], const double c[],
-        const double pq[2], const double x[2], double attr[]) {
+void interpolateVary(const int varyDim, const double a[], const double b[], const double c[],
+        const double pq[2], const double x[2], double vary[]) {
     
 //  Declare all the vectors we need to do the linear equation
-    double bMinusA[attrDim], cMinusA[attrDim], scaledP[attrDim], scaledQ[attrDim], pPlusQ[attrDim], st[attrDim];
+    double bMinusA[varyDim], cMinusA[varyDim], scaledP[varyDim], scaledQ[varyDim], pPlusQ[varyDim], st[varyDim];
     
-    vecSubtract(attrDim, b, a, bMinusA);
-    vecSubtract(attrDim, c, a, cMinusA);
+    vecSubtract(varyDim, b, a, bMinusA);
+    vecSubtract(varyDim, c, a, cMinusA);
     
-    vecScale(attrDim, pq[0], bMinusA, scaledP);
-    vecScale(attrDim, pq[1], cMinusA, scaledQ);
+    vecScale(varyDim, pq[0], bMinusA, scaledP);
+    vecScale(varyDim, pq[1], cMinusA, scaledQ);
     
-    vecAdd(attrDim, scaledP, scaledQ, pPlusQ);
-    vecAdd(attrDim, a, pPlusQ, attr);
+    vecAdd(varyDim, scaledP, scaledQ, pPlusQ);
+    vecAdd(varyDim, a, pPlusQ, vary);
     
-//  Set the first two elements of attr, which are the current rasterizing coordinates
-    attr[0] = x[0];
-    attr[1] = x[1];
+//  Set the first two elements of vary, which are the current rasterizing coordinates
+    vary[0] = x[0];
+    vary[1] = x[1];
 }
 
 /*triRender takes 3 points on the initialized graphics and creates a triangle with the given RGB
@@ -101,7 +101,7 @@ void triRender(const shaShading *sha,
             return;
         }
     
-        double pq[2], pointRGB[3], attr[sha->attrDim];
+        double pq[2], pointRGB[3], vary[sha->varyDim];
         
         //1st case where the location "b" is to the right of "c"
         if(b[0] > c[0]) {
@@ -114,9 +114,9 @@ void triRender(const shaShading *sha,
                 for(y = lowery; y <= uppery; y = y + 1) {
                     double currentX[2] = {(double)x0, (double)y};
                     findPQ(currentX, a, mInv, pq);
-                    interpolateAttr(sha->attrDim, a, b, c, pq, currentX, attr);
+                    interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
                     
-                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->attrDim, attr, pointRGB);
+                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
@@ -131,9 +131,9 @@ void triRender(const shaShading *sha,
                 for(y = lowery; y <= uppery; y = y + 1) {
                     double currentX[2] = {(double)x0, (double)y};
                     findPQ(currentX, a, mInv, pq);
-                    interpolateAttr(sha->attrDim, a, b, c, pq, currentX, attr);
+                    interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
                     
-                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->attrDim, attr, pointRGB);
+                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
@@ -150,9 +150,9 @@ void triRender(const shaShading *sha,
                 for(y = lowery; y <= uppery; y = y + 1){
                     double currentX[2] = {(double)x0, (double)y};
                     findPQ(currentX, a, mInv, pq);
-                    interpolateAttr(sha->attrDim, a, b, c, pq, currentX, attr);
+                    interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
                     
-                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->attrDim, attr, pointRGB);
+                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }
@@ -167,9 +167,9 @@ void triRender(const shaShading *sha,
                 for(y = lowery; y <= uppery; y = y + 1) {
                     double currentX[2] = {(double)x0, (double)y};
                     findPQ(currentX, a, mInv, pq);
-                    interpolateAttr(sha->attrDim, a, b, c, pq, currentX, attr);
+                    interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
                     
-                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->attrDim, attr, pointRGB);
+                    colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
                     pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
                 }
             }

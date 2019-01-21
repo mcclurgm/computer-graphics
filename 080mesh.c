@@ -263,12 +263,14 @@ void meshRender(const meshMesh *mesh, const shaShading *sha,
 	    double *vert1 = meshGetVertexPointer(mesh, triangle[1]);
 	    double *vert2 = meshGetVertexPointer(mesh, triangle[2]);
 	    
+// 	    Transform varying arrays
+        double vary0[sha->varyDim], vary1[sha->varyDim], vary2[sha->varyDim];
+        transformVertex(sha->unifDim, unif, sha->attrDim, vert0, sha->varyDim, vary0);
+        transformVertex(sha->unifDim, unif, sha->attrDim, vert1, sha->varyDim, vary1);
+        transformVertex(sha->unifDim, unif, sha->attrDim, vert2, sha->varyDim, vary2);
+	    
 // 	    Call triRender on this triangle
-        printf("vert0 : %f\n", vert0[0]);
-        printf("vert0 : %f\n", vert0[1]);
-        printf("vert0 : %f\n", vert0[2]);
-        printf("vert0 : %f\n", vert0[3]);
-        triRender(sha, unif, tex, vert0, vert1, vert2);
+        triRender(sha, unif, tex, vary0, vary1, vary2);
 	}
 }
 
