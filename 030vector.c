@@ -38,55 +38,41 @@ void vecScale(int dim, double c, const double w[], double cTimesW[]) {
 }
 
 
-// int main(void) {
-// 	double thing[2] = {1,2};
-// 	double c[2];
+/*** In specific dimensions ***/
 
-// 	vecCopy(2, thing, c);
+/* By the way, there is a way to write a single vecSet function that works in 
+all dimensions. The module stdarg.h, which is part of the C standard library, 
+lets you write variable-arity functions. The general vecSet would look like
+	void vecSet(int dim, double a[], ...)
+where the '...' represents dim numbers to be loaded into a. We're not going to 
+take this approach for two reasons. First, I try not to burden you with 
+learning a lot of C that isn't strictly necessary. Second, the variable-arity 
+feature is a bit dangerous, in that it provides no type checking. */
 
-// 	for(int i = 0; i < 2; i++) {
-// 		printf("c    : %f\n", thing[i]);
-// 		printf("thing: %f\n", c[i]);
-// 	}
+/* Copies three numbers into a three-dimensional vector. */
+void vec3Set(double a0, double a1, double a2, double a[3]) {
+	a[0] = a0;
+	a[1] = a1;
+	a[2] = a2;
+}
 
-// 	printf("original vector thing:\n");
-// 	for(int i = 0; i < 2; i++) {
-// 		printf("%f\n", thing[i]);
-// 	}
-	
-// 	printf("original vector c:\n");
-// 	for(int i = 0; i < 2; i++) {
-// 		printf("%f\n", c[i]);
-// 	}
+/* Copies four numbers into a four-dimensional vector. */
+void vec4Set(double a0, double a1, double a2, double a3, double a[4]) {
+	a[0] = a0;
+	a[1] = a1;
+	a[2] = a2;
+	a[3] = a3;
+}
 
-// 	printf("Adding thing and c\n");
-// 	double added[2];
-// 	vecAdd(2, thing, c, added);
-// 	for(int i = 0; i < 2; i++) {
-// 		printf("%f\n", added[i]);
-// 	}
-
-// 	printf("Subtracting thing and c\n");
-// 	double subbed[2];
-// 	vecSubtract(2, thing, c, subbed);
-// 	for(int i = 0; i < 2; i++) {
-// 		printf("%f\n", subbed[i]);
-// 	}
-
-// 	printf("Scaling thing by 2\n");
-// 	double scaled[2];
-// 	vecScale(2, 2, thing, scaled);
-// 	for(int i = 0; i < 2; i++) {
-// 		printf("%f\n", scaled[i]);
-// 	}
-
-// 	printf("final vector thing:\n");
-// 	for(int i = 0; i < 2; i++) {
-// 		printf("%f\n", thing[i]);
-// 	}
-	
-// 	printf("final vector c:\n");
-// 	for(int i = 0; i < 2; i++) {
-// 		printf("%f\n", c[i]);
-// 	}
-// }
+/* Copies eight numbers into a eight-dimensional vector. */
+void vec8Set(double a0, double a1, double a2, double a3, double a4, double a5, 
+		double a6, double a7, double a[8]) {
+	a[0] = a0;
+	a[1] = a1;
+	a[2] = a2;
+	a[3] = a3;
+	a[4] = a4;
+	a[5] = a5;
+	a[6] = a6;
+	a[7] = a7;
+}
