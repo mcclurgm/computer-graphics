@@ -45,12 +45,13 @@ that aren't parameters. */
 void colorPixel(int unifDim, const double unif[], int texNum, 
 		const texTexture *tex[], int attrDim, const double attr[], 
 		double rgb[3]) {
-	double sample[3];
-	texSample(tex[0], attr[2], attr[3], sample);
+	double sample1[3], sample2[3];
+	texSample(tex[0], attr[2], attr[3], sample1); // zuck
+	texSample(tex[1], sample1[0], sample1[2], sample2); // bliss
 	
-	rgb[0] = sample[0] * attr[4] * unif[0];
-	rgb[1] = sample[1] * attr[5] * unif[1];
-	rgb[2] = sample[2] * attr[6] * unif[2];
+	rgb[0] = sample2[0] * unif[0];
+	rgb[1] = sample2[1] * unif[1];
+	rgb[2] = sample2[2] * unif[2];
 }
 
 /* We have to include 050triangle.c after defining colorPixel, because it 
@@ -63,26 +64,27 @@ shaShading sha;
 const qualifier can be enforced throughout the surrounding code. C is confusing 
 for stuff like this. Don't worry about mastering C at this level. It doesn't 
 come up much in our course. */
-texTexture texture;
-const texTexture *textures[1] = {&texture};
+texTexture texture1;
+texTexture texture2;
+const texTexture *textures[2] = {&texture1, &texture2};
 const texTexture **tex = textures;
 
 void draw(void) {
 	pixClearRGB(0.0, 0.0, 0.0);
-	double a[7] = {400.0, 100.0, 1.0, 1.0, 1.0, 0.0, 0.0};
-	double b[7] = {500.0, 500.0, 0.0, 1.0, 0.0, 1.0, 0.0};
-	double c[7] = {30.0, 30.0, 0.0, 0.0, 0.0, 0.0, 1.0};
-	double unif[3] = {1.0, 1.0, 1.0};
+	double a[7] = {512.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0};
+	double b[7] = {512.0, 512.0, 1.0, 1.0, 0.0, 1.0, 1.0};
+	double c[7] = {0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0};
+	double unif[3] = {1.0, 0.74, 0.24};
 	triRender(&sha, unif, tex, a, b, c);
 }
 
 void handleKeyUp(int key, int shiftIsDown, int controlIsDown, 
 		int altOptionIsDown, int superCommandIsDown) {
 	if (key == GLFW_KEY_ENTER) {
-		if (texture.filtering == texLINEAR)
-			texSetFiltering(&texture, texNEAREST);
+		if (texture1.filtering == texLINEAR)
+			texSetFiltering(&texture1, texNEAREST);
 		else
-			texSetFiltering(&texture, texLINEAR);
+			texSetFiltering(&texture1, texLINEAR);
 		draw();
 	}
 }
@@ -96,20 +98,23 @@ int main(void) {
 	if (pixInitialize(512, 512, "Pixel Graphics") != 0)
 		return 1;
 	else {
-		if (texInitializeFile(&texture, "zuck.jpg") != 0)
+		if (texInitializeFile(&texture1, "zuck.jpg") != 0)
 			return 2;
+		if (texInitializeFile(&texture2, "bliss.jpg") != 0)
+		    return 3;
 		else {
-			texSetFiltering(&texture, texNEAREST);
-			texSetLeftRight(&texture, texREPEAT);
-			texSetTopBottom(&texture, texREPEAT);
+			texSetFiltering(&texture1, texNEAREST);
+			texSetLeftRight(&texture1, texREPEAT);
+			texSetTopBottom(&texture1, texREPEAT);
 			sha.unifDim = 3;
 			sha.attrDim = 2 + 2 + 3;
-			sha.texNum = 1;
+			sha.texNum = 2;
 			draw();
 			pixSetKeyUpHandler(handleKeyUp);
 			pixSetTimeStepHandler(handleTimeStep);
 			pixRun();
-			texDestroy(&texture);
+			texDestroy(&texture1);
+			texDestroy(&texture2);
 			return 0;
 		}
 	}
