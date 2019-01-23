@@ -97,7 +97,7 @@ void mat331Multiply(const double m[3][3], const double v[3],
 /* Fills the matrix m from its three columns. The output CANNOT safely alias the 
 input. */
 void mat33Columns(const double col0[3], const double col1[3], const double col2[3],
-     double m[2][2]) {
+        double m[3][3]) {
 	m[0][0] = col0[0];
 	m[1][0] = col0[1];
 	m[2][0] = col0[2];
