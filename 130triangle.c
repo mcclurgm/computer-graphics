@@ -71,15 +71,15 @@ void interpolateVary(const int varyDim, const double a[], const double b[], cons
 /*triRender takes 3 points on the initialized graphics and creates a triangle with the given RGB
   value. All triangles must be counterclockwise and are then formed into one of two base cases before
   being drawn. */
-void triRender(const shaShading *sha,
+void triRender(const shaShading *sha, depthBuffer *buf,
         const double unif[], const texTexture *tex[],
         const double a[], const double b[], const double c[]) {
     //Check if the location in position "a" is the left most point, if not recall triRender in a
     //different order.
     if(b[0] < a[0]) {
-        triRender(sha, unif, tex, b, c, a);
+        triRender(sha, buf, unif, tex, b, c, a);
     } else if(c[0] < a[0]) {
-        triRender(sha, unif, tex, c, a, b);
+        triRender(sha, buf, unif, tex, c, a, b);
     } else {
         int x0;
         int lowery;
@@ -100,8 +100,8 @@ void triRender(const shaShading *sha,
         if(det <= 0) {
             return;
         }
-    
-        double pq[2], pointRGB[3], vary[sha->varyDim];
+        
+        double pq[2], pointRGBD[4], vary[sha->varyDim];
         
         //1st case where the location "b" is to the right of "c"
         if(b[0] > c[0]) {
@@ -112,12 +112,17 @@ void triRender(const shaShading *sha,
                 uppery = (int)floor(findyBound(a, c, x0, 1));
                 int y;
                 for(y = lowery; y <= uppery; y = y + 1) {
-                    double currentX[2] = {(double)x0, (double)y};
-                    findPQ(currentX, a, mInv, pq);
-                    interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
-                    
-                    sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
-                    pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
+                    if((x0 <= buf->width && x0 >= 0) && (y <= buf->height && y >= 0)) {
+                        double currentX[2] = {(double)x0, (double)y};
+                        findPQ(currentX, a, mInv, pq);
+                        interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
+                        
+                        sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
+                        if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
+                            pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
+                            depthSetDepth(buf, x0, y, pointRGBD[3]);
+                        }
+                    }
                 }
             }
             
@@ -129,12 +134,17 @@ void triRender(const shaShading *sha,
                 
                 int y;
                 for(y = lowery; y <= uppery; y = y + 1) {
-                    double currentX[2] = {(double)x0, (double)y};
-                    findPQ(currentX, a, mInv, pq);
-                    interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
-                    
-                    sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
-                    pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
+                    if((x0 <= buf->width && x0 >= 0) && (y <= buf->height && y >= 0)) {
+                        double currentX[2] = {(double)x0, (double)y};
+                        findPQ(currentX, a, mInv, pq);
+                        interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
+                        
+                        sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
+                        if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
+                            pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
+                            depthSetDepth(buf, x0, y, pointRGBD[3]);
+                        }
+                    }
                 }
             }
         }
@@ -148,12 +158,17 @@ void triRender(const shaShading *sha,
                 uppery = (int)floor(findyBound(a, c, x0, 1));
                 int y;
                 for(y = lowery; y <= uppery; y = y + 1){
-                    double currentX[2] = {(double)x0, (double)y};
-                    findPQ(currentX, a, mInv, pq);
-                    interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
-                    
-                    sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
-                    pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
+                    if((x0 <= buf->width && x0 >= 0) && (y <= buf->height && y >= 0)) {
+                        double currentX[2] = {(double)x0, (double)y};
+                        findPQ(currentX, a, mInv, pq);
+                        interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
+                        
+                        sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
+                        if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
+                            pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
+                            depthSetDepth(buf, x0, y, pointRGBD[3]);
+                        }
+                    }
                 }
             }
             
@@ -165,12 +180,17 @@ void triRender(const shaShading *sha,
                 
                 int y;
                 for(y = lowery; y <= uppery; y = y + 1) {
-                    double currentX[2] = {(double)x0, (double)y};
-                    findPQ(currentX, a, mInv, pq);
-                    interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
-                    
-                    sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGB);
-                    pixSetRGB(x0, y, pointRGB[0], pointRGB[1], pointRGB[2]);
+                    if((x0 <= buf->width && x0 >= 0) && (y <= buf->height && y >= 0)) {
+                        double currentX[2] = {(double)x0, (double)y};
+                        findPQ(currentX, a, mInv, pq);
+                        interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
+                        
+                        sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
+                        if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
+                            pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
+                            depthSetDepth(buf, x0, y, pointRGBD[3]);
+                        }
+                    }
                 }
             }
         }

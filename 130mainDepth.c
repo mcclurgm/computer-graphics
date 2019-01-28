@@ -14,9 +14,10 @@
 #include "120vector.c"
 #include "120matrix.c"
 #include "040texture.c"
-#include "090shading.c"
-#include "120triangle.c"
-#include "120mesh.c"
+#include "130shading.c"
+#include "130depth.c"
+#include "130triangle.c"
+#include "130mesh.c"
 
 #define mainATTRX 0
 #define mainATTRY 1
@@ -28,8 +29,9 @@
 #define mainATTRP 7
 #define mainVARYX 0
 #define mainVARYY 1
-#define mainVARYS 2
-#define mainVARYT 3
+#define mainVARYZ 2
+#define mainVARYS 3
+#define mainVARYT 4
 #define mainUNIFR 0
 #define mainUNIFG 1
 #define mainUNIFB 2
@@ -40,12 +42,13 @@
 
 void colorPixel(int unifDim, const double unif[], int texNum, 
 		const texTexture *tex[], int varyDim, const double vary[], 
-		double rgb[3]) {
+		double rgbd[4]) {
 	double sample[tex[0]->texelDim];
 	texSample(tex[0], vary[mainVARYS], vary[mainVARYT], sample);
-	rgb[0] = sample[mainTEXR] * unif[mainUNIFR];
-	rgb[1] = sample[mainTEXG] * unif[mainUNIFG];
-	rgb[2] = sample[mainTEXB] * unif[mainUNIFB];
+	rgbd[0] = sample[mainTEXR] * unif[mainUNIFR];
+	rgbd[1] = sample[mainTEXG] * unif[mainUNIFG];
+	rgbd[2] = sample[mainTEXB] * unif[mainUNIFB];
+	rgbd[3] = -vary[mainVARYZ];
 }
 
 void transformVertex(int unifDim, const double unif[], int attrDim, 
@@ -57,22 +60,33 @@ void transformVertex(int unifDim, const double unif[], int attrDim,
 }
 
 shaShading sha;
+shaShading shaSphere;
 texTexture texture;
 const texTexture *textures[1] = {&texture};
 const texTexture **tex = textures;
 meshMesh mesh;
+meshMesh meshSphere;
+depthBuffer buf;
 double unif[3 + 16] = {1.0, 1.0, 1.0, 
+	1.0, 0.0, 0.0, 0.0, 
+	0.0, 1.0, 0.0, 0.0, 
+	0.0, 0.0, 1.0, 0.0, 
+	0.0, 0.0, 0.0, 1.0};
+double unifSphere[3 + 16] = {1.0, 1.0, 0.0, 
 	1.0, 0.0, 0.0, 0.0, 
 	0.0, 1.0, 0.0, 0.0, 
 	0.0, 0.0, 1.0, 0.0, 
 	0.0, 0.0, 0.0, 1.0};
 double rotationAngle = 0.0;
 double rotationAxis[3];
-double translationVector[3] = {256.0, 256.0, 256.0};
+double translationVector[3] = {50.0, 256.0, 256.0};
+double translationVectorSphere[3] = {100.0, 256.0, 256.0};
 
 void draw(void) {
 	pixClearRGB(0.0, 0.0, 0.0);
-	meshRender(&mesh, &sha, unif, tex);
+	depthClearDepths(&buf, 100000);
+	meshRender(&mesh, &buf, &sha, unif, tex);
+	meshRender(&meshSphere, &buf, &shaSphere, unifSphere, tex);
 }
 
 void handleKeyUp(int key, int shiftIsDown, int controlIsDown, 
@@ -91,12 +105,16 @@ void handleTimeStep(double oldTime, double newTime) {
 		printf("handleTimeStep: %f frames/sec\n", 1.0 / (newTime - oldTime));
 	unif[mainUNIFR] = sin(newTime);
 	unif[mainUNIFG] = cos(oldTime);
+	unifSphere[mainUNIFR] = sin(newTime);
+	unifSphere[mainUNIFG] = cos(oldTime);
 	rotationAngle += (newTime - oldTime);
-	double rot[3][3], isom[4][4];
+	double rot[3][3], isom[4][4], isomSphere[4][4];
 	vec3Set(1.0 / sqrt(3.0), 1.0 / sqrt(3.0), 1.0 / sqrt(3.0), rotationAxis);
 	mat33AngleAxisRotation(rotationAngle, rotationAxis, rot);
 	mat44Isometry(rot, translationVector, isom);
+	mat44Isometry(rot, translationVectorSphere, isomSphere);
 	vecCopy(16, (double *)isom, &unif[mainUNIFMODELING]);
+	vecCopy(16, (double *)isomSphere, &unifSphere[mainUNIFMODELING]);
 	draw();
 }
 
@@ -106,8 +124,11 @@ int main(void) {
 	else if (texInitializeFile(&texture, "zuck.jpg") != 0)
 		return 2;
 	else if (meshInitializeBox(&mesh, -128.0, 128.0, -64.0, 64.0, -32.0, 32.0) != 0)
-	//else if (meshInitializeSphere(&mesh, 64.0, 16, 32) != 0)
 		return 3;
+	else if (meshInitializeSphere(&meshSphere, 64.0, 16, 32) != 0)
+	    return 4;
+	else if(depthInitialize(&buf, 512, 512) != 0)
+	    return 5;
 	else {
 		{
 			meshMesh meshB;
@@ -120,16 +141,23 @@ int main(void) {
 		texSetTopBottom(&texture, texREPEAT);
 		sha.unifDim = 3 + 16;
 		sha.attrDim = 3 + 2 + 3;
-		sha.varyDim = 2 + 2;
+		sha.varyDim = 3 + 2;
 		sha.colorPixel = colorPixel;
 		sha.transformVertex = transformVertex;
 		sha.texNum = 1;
+		shaSphere.unifDim = 3 + 16;
+		shaSphere.attrDim = 3 + 2 + 3;
+		shaSphere.varyDim = 3 + 2;
+		shaSphere.colorPixel = colorPixel;
+		shaSphere.transformVertex = transformVertex;
+		shaSphere.texNum = 1;
 		draw();
 		pixSetKeyUpHandler(handleKeyUp);
 		pixSetTimeStepHandler(handleTimeStep);
 		pixRun();
 		meshDestroy(&mesh);
 		texDestroy(&texture);
+		depthDestroy(&buf);
 		return 0;
 	}
 }

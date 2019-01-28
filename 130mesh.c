@@ -623,7 +623,7 @@ int meshInitializeDissectedLandscape(meshMesh *mesh, const meshMesh *land,
 
 /* Renders the mesh. But if the mesh and the shading have differing values for 
 attrDim, then prints an error message and does not render anything. */
-void meshRender(const meshMesh *mesh, const shaShading *sha, 
+void meshRender(const meshMesh *mesh, depthBuffer *buf, const shaShading *sha, 
 		const double unif[], const texTexture *tex[]) {
 	if(mesh->attrDim != sha->attrDim) {
 	    printf("Could not render mesh: attrDim did not agree.\n");
@@ -646,7 +646,7 @@ void meshRender(const meshMesh *mesh, const shaShading *sha,
         sha->transformVertex(sha->unifDim, unif, sha->attrDim, vert2, sha->varyDim, vary2);
 	    
 // 	    Call triRender on this triangle
-        triRender(sha, unif, tex, vary0, vary1, vary2);
+        triRender(sha, buf, unif, tex, vary0, vary1, vary2);
 	}
 }
 
