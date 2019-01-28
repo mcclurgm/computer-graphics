@@ -76,3 +76,52 @@ void vec8Set(double a0, double a1, double a2, double a3, double a4, double a5,
 	a[6] = a6;
 	a[7] = a7;
 }
+
+/* Returns the dot product of the vectors v and w. */
+double vecDot(int dim, const double v[], const double w[]) {
+    int i, total = 0;
+    for(i = 0; i < dim; i++) {
+        total += v[i] * w[i];
+    }
+    
+    return total;
+}
+
+/* Returns the length of the vector v. */
+double vecLength(int dim, const double v[]) {
+    double mag2 = vecDot(dim, v, v);
+    return sqrt(mag2);
+}
+
+/* Returns the length of the vector v. If the length is non-zero, then also 
+places a normalized (length-1) version of v into unit. The output can safely 
+alias the input. */
+double vecUnit(int dim, const double v[], double unit[]) {
+    double mag = vecLength(dim, v);
+    
+    if(mag != 0.0) {
+        int i;
+        for(i = 0; i < dim; i++) {
+            unit[i] = v[i] / mag;
+        }
+    }
+    
+    return mag;
+}
+
+/* Computes the cross product of v and w, and places it into vCrossW. The 
+output CANNOT safely alias the input. */
+void vec3Cross(const double v[3], const double w[3], double vCrossW[3]) {
+    vCrossW[0] = (v[1] * w[2]) - (v[2] * w[1]);
+    vCrossW[1] = (v[2] * w[0]) - (v[0] * w[2]);
+    vCrossW[2] = (v[0] * w[1]) - (v[1] * w[0]);
+}
+
+/* Computes the vector v from its spherical coordinates. rho >= 0.0 is the 
+radius. 0 <= phi <= pi is the co-latitude. -pi <= theta <= pi is the longitude 
+or azimuth. */
+void vec3Spherical(double rho, double phi, double theta, double v[3]) {
+    v[0] = rho * sin(phi) * cos(theta);
+    v[1] = rho * sin(phi) * sin(theta);
+    v[2] = rho * cos(phi);
+}

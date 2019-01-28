@@ -97,7 +97,7 @@ void triRender(const shaShading *sha,
 
 //      Check if m is an invertible matrix; break if not.
         det = mat22Invert(m, mInv);
-        if(det == 0) {
+        if(det <= 0) {
             return;
         }
     
