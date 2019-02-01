@@ -88,7 +88,21 @@ plane the box is the same rectangle R. Keep in mind that 0 > near > far. Maps
 the viewing volume to [-1, 1] x [-1, 1] x [-1, 1], with far going to 1 and near
 going to -1. */
 void camGetOrthographic(const camCamera *cam, double proj[4][4]) {
+	double left = cam->projection[camPROJL];
+	double right = cam->projection[camPROJR];
+	double bottom = cam->projection[camPROJB];
+	double top = cam->projection[camPROJT];
+	double far = cam->projection[camPROJF];
+	double near = cam->projection[camPROJN];
+  mat44Zero(proj);
 
+  proj[0][0] = 2 / (right - left);
+  proj[1][1] = 2 / (top - bottom);
+  proj[2][2] = -2 / (near - far);
+  proj[0][3] = (-right - left) / (right - left);
+  proj[1][2] = (-top - bottom) / (top - bottom);
+  proj[2][3] = (near + far) / (near - far);
+  proj[3][3] = 1.0;
 }
 
 /* Inverse to the matrix produced by camGetOrthographic. */
@@ -143,5 +157,8 @@ void camSetFrustum(camCamera *cam, double fovy, double focal, double ratio,
 /* Returns the homogeneous 4x4 product of the camera's projection and the
 camera's inverse isometry. */
 void camGetProjectionInverseIsometry(camCamera *cam, double homog[4][4]) {
-
+  double projection[4][4], inverseIso[4][4];
+  camGetOrthographic (cam, projection);
+  isoGetInverseHomogeneous (&(cam->isometry), inverseIso);
+  mat444Multiply (projection, inverseIso, homog);
 }

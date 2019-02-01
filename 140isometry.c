@@ -66,19 +66,4 @@ void isoGetInverseHomogeneous(const isoIsometry *iso, double homogInv[4][4]) {
     mat331TransposeMultiply(iso->rotation, iso->translation, invTranslation);
     vecScale(3, -1, invTranslation, invTranslationNeg);
     mat44Isometry(invRotation, invTranslationNeg, homogInv);
-
-		// TAKE 2
-		// for(int i = 0; i < 3; i++) {
-		// 	for(int j = 0; j < 3; j++) {
-		// 		homogInv[i][j] = iso->rotation[j][i];
-		// 	}
-		// }
-		//
-		// double invTranslation[3];
-		// mat331TransposeMultiply(iso->rotation, iso->translation, invTranslation);
-		// for(int i = 0; i < 3; i++) {
-		// 	homogInv[3][i] = 0;
-		// 	homogInv[i][3] = -invTranslation[i];
-		// }
-		// homogInv[3][3] = 1;
 }

@@ -278,3 +278,32 @@ void mat44Zero(double m[4][4]) {
         }
     }
 }
+
+/* Builds a 4x4 matrix for a viewport with lower left (0, 0) and upper right
+(width, height). This matrix maps a projected viewing volume
+[-1, 1] x [-1, 1] x [-1, 1] to screen [0, w] x [0, h] x [0, 1] (each interval
+in that order). */
+void mat44Viewport(double width, double height, double view[4][4]) {
+  mat44Zero(view);
+
+  view[0][0] = width / 2;
+  view[1][1] = height / 2;
+  view[2][2] = 0.5;
+  view[0][3] = width / 2;
+  view[1][2] = height / 2;
+  view[2][3] = 0.5;
+  view[3][3] = 1.0;
+}
+
+/* Inverse to mat44Viewport. */
+void mat44InverseViewport(double width, double height, double view[4][4]) {
+  mat44Zero(view);
+
+  view[0][0] = 2 / width;
+  view[1][1] = 2 / height;
+  view[2][2] = 2;
+  view[0][3] = -1;
+  view[1][2] = -1;
+  view[2][3] = -1;
+  view[3][3] = 1.0;
+}
