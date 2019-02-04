@@ -290,7 +290,7 @@ void mat44Viewport(double width, double height, double view[4][4]) {
   view[1][1] = height / 2;
   view[2][2] = 0.5;
   view[0][3] = width / 2;
-  view[1][2] = height / 2;
+  view[1][3] = height / 2;
   view[2][3] = 0.5;
   view[3][3] = 1.0;
 }
@@ -303,7 +303,7 @@ void mat44InverseViewport(double width, double height, double view[4][4]) {
   view[1][1] = 2 / height;
   view[2][2] = 2;
   view[0][3] = -1;
-  view[1][2] = -1;
+  view[1][3] = -1;
   view[2][3] = -1;
   view[3][3] = 1.0;
 }
