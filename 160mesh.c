@@ -3,7 +3,7 @@
 
 /*** Creating and destroying ***/
 
-/* Feel free to read the struct's members, but don't write them, except through 
+/* Feel free to read the struct's members, but don't write them, except through
 the accessors below such as meshSetTriangle, meshSetVertex. */
 typedef struct meshMesh meshMesh;
 struct meshMesh {
@@ -12,9 +12,9 @@ struct meshMesh {
 	double *vert;					/* vertNum * attrDim doubles */
 };
 
-/* Initializes a mesh with enough memory to hold its triangles and vertices. 
-Does not actually fill in those triangles or vertices with useful data. When 
-you are finished with the mesh, you must call meshDestroy to deallocate its 
+/* Initializes a mesh with enough memory to hold its triangles and vertices.
+Does not actually fill in those triangles or vertices with useful data. When
+you are finished with the mesh, you must call meshDestroy to deallocate its
 backing resources. */
 int meshInitialize(meshMesh *mesh, int triNum, int vertNum, int attrDim) {
 	mesh->tri = (int *)malloc(triNum * 3 * sizeof(int) +
@@ -65,7 +65,7 @@ double *meshGetVertexPointer(const meshMesh *mesh, int vert) {
 		return NULL;
 }
 
-/* Deallocates the resources backing the mesh. This function must be called 
+/* Deallocates the resources backing the mesh. This function must be called
 when you are finished using a mesh. */
 void meshDestroy(meshMesh *mesh) {
 	free(mesh->tri);
@@ -76,7 +76,7 @@ void meshDestroy(meshMesh *mesh) {
 /*** Writing and reading files ***/
 
 /* Helper function for meshInitializeFile. */
-int meshFileError(meshMesh *mesh, FILE *file, const char *cause, 
+int meshFileError(meshMesh *mesh, FILE *file, const char *cause,
 		const int line) {
 	fprintf(stderr, "error: meshInitializeFile: %s at line %d\n", cause, line);
 	fclose(file);
@@ -84,11 +84,11 @@ int meshFileError(meshMesh *mesh, FILE *file, const char *cause,
 	return 3;
 }
 
-/* Initializes a mesh from a mesh file. The file format is simple and custom 
-(not any industry standard). It is documented at meshSaveFile. This function 
-does not do as much error checking as one might like. Use it only on trusted, 
-non-corrupted files, such as ones that you have recently created using 
-meshSaveFile. Returns 0 on success, non-zero on failure. Don't forget to invoke 
+/* Initializes a mesh from a mesh file. The file format is simple and custom
+(not any industry standard). It is documented at meshSaveFile. This function
+does not do as much error checking as one might like. Use it only on trusted,
+non-corrupted files, such as ones that you have recently created using
+meshSaveFile. Returns 0 on success, non-zero on failure. Don't forget to invoke
 meshDestroy when you are done using the mesh. */
 int meshInitializeFile(meshMesh *mesh, const char *path) {
 	FILE *file = fopen(path, "r");
@@ -98,7 +98,7 @@ int meshInitializeFile(meshMesh *mesh, const char *path) {
 	}
 	int year, month, day, triNum, vertNum, attrDim;
 	// Future work: Check version.
-	if (fscanf(file, "Carleton College CS 311 mesh version %d/%d/%d\n", &year, 
+	if (fscanf(file, "Carleton College CS 311 mesh version %d/%d/%d\n", &year,
 			&month, &day) != 3) {
 		fprintf(stderr, "error: meshInitializeFile: bad header at line 1\n");
 		fclose(file);
@@ -130,7 +130,7 @@ int meshInitializeFile(meshMesh *mesh, const char *path) {
 		tri = meshGetTrianglePointer(mesh, line - 6);
 		if (fscanf(file, "%d %d %d\n", &tri[0], &tri[1], &tri[2]) != 3)
 			return meshFileError(mesh, file, "bad triangle", line);
-		if (0 > tri[0] || tri[0] >= vertNum || 0 > tri[1] || tri[1] >= vertNum 
+		if (0 > tri[0] || tri[0] >= vertNum || 0 > tri[1] || tri[1] >= vertNum
 				|| 0 > tri[2] || tri[2] >= vertNum)
 			return meshFileError(mesh, file, "bad index", line);
 	}
@@ -151,16 +151,16 @@ int meshInitializeFile(meshMesh *mesh, const char *path) {
 	return 0;
 }
 
-/* Saves a mesh to a file in a simple custom format (not any industry 
-standard). Returns 0 on success, non-zero on failure. The first line is a 
+/* Saves a mesh to a file in a simple custom format (not any industry
+standard). Returns 0 on success, non-zero on failure. The first line is a
 comment of the form 'Carleton College CS 311 mesh version YYYY/MM/DD'.
 
-I now describe version 2019/01/15. The second line says 'triNum [triNum]', 
-where the latter is an integer value. The third and fourth lines do the same 
-for vertNum and attrDim. The fifth line says '[triNum] Triangles:'. Then there 
-are triNum lines, each holding three integers between 0 and vertNum - 1 
-(separated by a space). Then there is a line that says '[vertNum] Vertices:'. 
-Then there are vertNum lines, each holding attrDim floating-point numbers 
+I now describe version 2019/01/15. The second line says 'triNum [triNum]',
+where the latter is an integer value. The third and fourth lines do the same
+for vertNum and attrDim. The fifth line says '[triNum] Triangles:'. Then there
+are triNum lines, each holding three integers between 0 and vertNum - 1
+(separated by a space). Then there is a line that says '[vertNum] Vertices:'.
+Then there are vertNum lines, each holding attrDim floating-point numbers
 (terminated by a space). */
 int meshSaveFile(const meshMesh *mesh, const char *path) {
 	FILE *file = fopen(path, "w");
@@ -195,10 +195,10 @@ int meshSaveFile(const meshMesh *mesh, const char *path) {
 
 /*** Convenience initializers: 2D ***/
 
-/* Initializes a mesh to two triangles forming a rectangle of the given sides. 
-The four attributes are X, Y, S, T. Do not call meshInitialize separately; it 
+/* Initializes a mesh to two triangles forming a rectangle of the given sides.
+The four attributes are X, Y, S, T. Do not call meshInitialize separately; it
 is called inside this function. Don't forget to call meshDestroy when done. */
-int meshInitializeRectangle(meshMesh *mesh, double left, double right, 
+int meshInitializeRectangle(meshMesh *mesh, double left, double right,
 		double bottom, double top) {
 	int error = meshInitialize(mesh, 2, 4, 2 + 2);
 	if (error == 0) {
@@ -217,11 +217,11 @@ int meshInitializeRectangle(meshMesh *mesh, double left, double right,
 	return error;
 }
 
-/* Initializes a mesh to sideNum triangles forming an ellipse of the given 
-center (x, y) and radii rx, ry. The four attributes are X, Y, S, T. Do not call 
-meshInitialize separately; it is called inside this function. Don't forget to 
+/* Initializes a mesh to sideNum triangles forming an ellipse of the given
+center (x, y) and radii rx, ry. The four attributes are X, Y, S, T. Do not call
+meshInitialize separately; it is called inside this function. Don't forget to
 call meshDestroy when done. */
-int meshInitializeEllipse(meshMesh *mesh, double x, double y, double rx, 
+int meshInitializeEllipse(meshMesh *mesh, double x, double y, double rx,
 		double ry, int sideNum) {
 	int i, error;
 	double theta, cosTheta, sinTheta, attr[4] = {x, y, 0.5, 0.5};
@@ -233,7 +233,7 @@ int meshInitializeEllipse(meshMesh *mesh, double x, double y, double rx,
 			theta = i * 2.0 * M_PI / sideNum;
 			cosTheta = cos(theta);
 			sinTheta = sin(theta);
-			vec4Set(x + rx * cosTheta, y + ry * sinTheta, 
+			vec4Set(x + rx * cosTheta, y + ry * sinTheta,
 				0.5 * cosTheta + 0.5, 0.5 * sinTheta + 0.5, attr);
 			meshSetVertex(mesh, i + 1, attr);
 		}
@@ -245,11 +245,11 @@ int meshInitializeEllipse(meshMesh *mesh, double x, double y, double rx,
 
 /*** Convenience initializers: 3D ***/
 
-/* Assumes that attributes 0, 1, 2 are XYZ. Assumes that the vertices of the 
-triangle are in counter-clockwise order when viewed from 'outside' the 
-triangle. Computes the outward-pointing unit normal vector for the triangle. 
+/* Assumes that attributes 0, 1, 2 are XYZ. Assumes that the vertices of the
+triangle are in counter-clockwise order when viewed from 'outside' the
+triangle. Computes the outward-pointing unit normal vector for the triangle.
 The output CANNOT safely alias the input. */
-void meshTrueNormal(const double a[], const double b[], const double c[], 
+void meshTrueNormal(const double a[], const double b[], const double c[],
 		double normal[3]) {
 	double bMinusA[3], cMinusA[3];
 	vecSubtract(3, b, a, bMinusA);
@@ -258,8 +258,8 @@ void meshTrueNormal(const double a[], const double b[], const double c[],
 	vecUnit(3, normal, normal);
 }
 
-/* Assumes that attributes 0, 1, 2 are XYZ. Sets attributes n, n + 1, n + 2 to 
-flat-shaded normals. If a vertex belongs to more than triangle, then some 
+/* Assumes that attributes 0, 1, 2 are XYZ. Sets attributes n, n + 1, n + 2 to
+flat-shaded normals. If a vertex belongs to more than triangle, then some
 unspecified triangle's normal wins. */
 void meshFlatNormals(meshMesh *mesh, int n) {
 	int i, *tri;
@@ -276,8 +276,8 @@ void meshFlatNormals(meshMesh *mesh, int n) {
 	}
 }
 
-/* Assumes that attributes 0, 1, 2 are XYZ. Sets attributes n, n + 1, n + 2 to 
-smooth-shaded normals. Does not do anything special to handle multiple vertices 
+/* Assumes that attributes 0, 1, 2 are XYZ. Sets attributes n, n + 1, n + 2 to
+smooth-shaded normals. Does not do anything special to handle multiple vertices
 with the same coordinates. */
 void meshSmoothNormals(meshMesh *mesh, int n) {
 	int i, *tri;
@@ -305,12 +305,12 @@ void meshSmoothNormals(meshMesh *mesh, int n) {
 	}
 }
 
-/* Builds a mesh for a parallelepiped (box) of the given size. The attributes 
-are XYZ position, ST texture, and NOP unit normal vector. The normals are 
-discontinuous at the edges (flat shading, not smooth). To facilitate this, some 
-vertices have equal XYZ but different NOP, for 24 vertices in all. Don't forget 
+/* Builds a mesh for a parallelepiped (box) of the given size. The attributes
+are XYZ position, ST texture, and NOP unit normal vector. The normals are
+discontinuous at the edges (flat shading, not smooth). To facilitate this, some
+vertices have equal XYZ but different NOP, for 24 vertices in all. Don't forget
 to meshDestroy when finished. */
-int meshInitializeBox(meshMesh *mesh, double left, double right, double bottom, 
+int meshInitializeBox(meshMesh *mesh, double left, double right, double bottom,
 		double top, double base, double lid) {
 	int error = meshInitialize(mesh, 12, 24, 3 + 2 + 3);
 	if (error == 0) {
@@ -381,7 +381,7 @@ int meshInitializeBox(meshMesh *mesh, double left, double right, double bottom,
 	return error;
 }
 
-/* Rotates a 2-dimensional vector through an angle. The output can safely alias 
+/* Rotates a 2-dimensional vector through an angle. The output can safely alias
 the input. */
 void meshRotateVector(double theta, const double v[2], double vRot[2]) {
 	double cosTheta = cos(theta);
@@ -391,18 +391,18 @@ void meshRotateVector(double theta, const double v[2], double vRot[2]) {
 	vRot[0] = vRot0;
 }
 
-/* Rotate a curve about the Z-axis. Can be used to make a sphere, spheroid, 
-capsule, circular cone, circular cylinder, box, etc. The z-values should be in 
-ascending order --- or at least the first z should be less than the last. The 
-first and last r-values should be 0.0, and no others. Probably the t-values 
-should be in ascending or descending order. The sideNum parameter controls the 
-fineness of the mesh. The attributes are XYZ position, ST texture, and NOP unit 
-normal vector. The normals are smooth. Don't forget to meshDestroy when 
+/* Rotate a curve about the Z-axis. Can be used to make a sphere, spheroid,
+capsule, circular cone, circular cylinder, box, etc. The z-values should be in
+ascending order --- or at least the first z should be less than the last. The
+first and last r-values should be 0.0, and no others. Probably the t-values
+should be in ascending or descending order. The sideNum parameter controls the
+fineness of the mesh. The attributes are XYZ position, ST texture, and NOP unit
+normal vector. The normals are smooth. Don't forget to meshDestroy when
 finished. */
-int meshInitializeRevolution(meshMesh *mesh, int zNum, const double z[], 
+int meshInitializeRevolution(meshMesh *mesh, int zNum, const double z[],
 		const double r[], const double t[], int sideNum) {
 	int i, j, error;
-	error = meshInitialize(mesh, (zNum - 2) * sideNum * 2, 
+	error = meshInitialize(mesh, (zNum - 2) * sideNum * 2,
 		(zNum - 2) * (sideNum + 1) + 2, 3 + 2 + 3);
 	if (error == 0) {
 		/* Make the bottom triangles. */
@@ -410,19 +410,19 @@ int meshInitializeRevolution(meshMesh *mesh, int zNum, const double z[],
 			meshSetTriangle(mesh, i, 0, i + 2, i + 1);
 		/* Make the top triangles. */
 		for (i = 0; i < sideNum; i += 1)
-			meshSetTriangle(mesh, sideNum + i, mesh->vertNum - 1, 
-				mesh->vertNum - 1 - (sideNum + 1) + i, 
+			meshSetTriangle(mesh, sideNum + i, mesh->vertNum - 1,
+				mesh->vertNum - 1 - (sideNum + 1) + i,
 				mesh->vertNum - 1 - (sideNum + 1) + i + 1);
 		/* Make the middle triangles. */
 		for (j = 1; j <= zNum - 3; j += 1)
 			for (i = 0; i < sideNum; i += 1) {
 				meshSetTriangle(mesh, 2 * sideNum * j + 2 * i,
-					(j - 1) * (sideNum + 1) + 1 + i, 
-					j * (sideNum + 1) + 1 + i + 1, 
+					(j - 1) * (sideNum + 1) + 1 + i,
+					j * (sideNum + 1) + 1 + i + 1,
 					j * (sideNum + 1) + 1 + i);
 				meshSetTriangle(mesh, 2 * sideNum * j + 2 * i + 1,
-					(j - 1) * (sideNum + 1) + 1 + i, 
-					(j - 1) * (sideNum + 1) + 1 + i + 1, 
+					(j - 1) * (sideNum + 1) + 1 + i,
+					(j - 1) * (sideNum + 1) + 1 + i + 1,
 					j * (sideNum + 1) + 1 + i + 1);
 			}
 		/* Make the vertices, using vertex 0 as temporary storage. */
@@ -456,9 +456,9 @@ int meshInitializeRevolution(meshMesh *mesh, int zNum, const double z[],
 	return error;
 }
 
-/* Builds a mesh for a sphere, centered at the origin, of radius r. The sideNum 
-and layerNum parameters control the fineness of the mesh. The attributes are 
-XYZ position, ST texture, and NOP unit normal vector. The normals are smooth. 
+/* Builds a mesh for a sphere, centered at the origin, of radius r. The sideNum
+and layerNum parameters control the fineness of the mesh. The attributes are
+XYZ position, ST texture, and NOP unit normal vector. The normals are smooth.
 Don't forget to meshDestroy when finished. */
 int meshInitializeSphere(meshMesh *mesh, double r, int layerNum, int sideNum) {
 	int error, i;
@@ -473,19 +473,19 @@ int meshInitializeSphere(meshMesh *mesh, double r, int layerNum, int sideNum) {
 			zs[i] = -r * cos(ts[i] * M_PI);
 			rs[i] = r * sin(ts[i] * M_PI);
 		}
-		error = meshInitializeRevolution(mesh, layerNum + 1, zs, rs, ts, 
+		error = meshInitializeRevolution(mesh, layerNum + 1, zs, rs, ts,
 			sideNum);
 		free(ts);
 		return error;
 	}
 }
 
-/* Builds a mesh for a circular cylinder with spherical caps, centered at the 
-origin, of radius r and length l > 2 * r. The sideNum and layerNum parameters 
-control the fineness of the mesh. The attributes are XYZ position, ST texture, 
-and NOP unit normal vector. The normals are smooth. Don't forget to meshDestroy 
+/* Builds a mesh for a circular cylinder with spherical caps, centered at the
+origin, of radius r and length l > 2 * r. The sideNum and layerNum parameters
+control the fineness of the mesh. The attributes are XYZ position, ST texture,
+and NOP unit normal vector. The normals are smooth. Don't forget to meshDestroy
 when finished. */
-int meshInitializeCapsule(meshMesh *mesh, double r, double l, int layerNum, 
+int meshInitializeCapsule(meshMesh *mesh, double r, double l, int layerNum,
 		int sideNum) {
 	int error, i;
 	double theta;
@@ -513,38 +513,38 @@ int meshInitializeCapsule(meshMesh *mesh, double r, double l, int layerNum,
 		zs[2 * layerNum + 1] = l / 2.0;
 		rs[2 * layerNum + 1] = 0.0;
 		ts[2 * layerNum + 1] = 1.0;
-		error = meshInitializeRevolution(mesh, 2 * layerNum + 2, zs, rs, ts, 
+		error = meshInitializeRevolution(mesh, 2 * layerNum + 2, zs, rs, ts,
 			sideNum);
 		free(ts);
 		return error;
 	}
 }
 
-/* Builds a non-closed 'landscape' mesh based on a grid of Z-values. There are 
-width * height Z-values, which arrive in the data parameter. The mesh is made 
-of (width - 1) * (height - 1) squares, each made of two triangles. The spacing 
-parameter controls the spacing of the X- and Y-coordinates of the vertices. The 
-attributes are XYZ position, ST texture, and NOP unit normal vector. Don't 
-forget to call meshDestroy when finished with the mesh. To understand the exact 
+/* Builds a non-closed 'landscape' mesh based on a grid of Z-values. There are
+width * height Z-values, which arrive in the data parameter. The mesh is made
+of (width - 1) * (height - 1) squares, each made of two triangles. The spacing
+parameter controls the spacing of the X- and Y-coordinates of the vertices. The
+attributes are XYZ position, ST texture, and NOP unit normal vector. Don't
+forget to call meshDestroy when finished with the mesh. To understand the exact
 layout of the data, try this example code:
 double zs[3][4] = {
-	{10.0, 9.0, 7.0, 6.0}, 
-	{6.0, 5.0, 3.0, 1.0}, 
+	{10.0, 9.0, 7.0, 6.0},
+	{6.0, 5.0, 3.0, 1.0},
 	{4.0, 3.0, -1.0, -2.0}};
 int error = meshInitializeLandscape(&mesh, 3, 4, 20.0, (double *)zs); */
-int meshInitializeLandscape(meshMesh *mesh, int width, int height, 
+int meshInitializeLandscape(meshMesh *mesh, int width, int height,
 		double spacing, const double *data) {
 	int i, j, error;
 	int a, b, c, d;
 	double *vert, diffSWNE, diffSENW;
-	error = meshInitialize(mesh, 2 * (width - 1) * (height - 1), 
+	error = meshInitialize(mesh, 2 * (width - 1) * (height - 1),
 		width * height, 3 + 2 + 3);
 	if (error == 0) {
 		/* Build the vertices with normals set to 0. */
 		for (i = 0; i < width; i += 1)
 			for (j = 0; j < height; j += 1) {
 				vert = meshGetVertexPointer(mesh, i * height + j);
-				vec8Set(i * spacing, j * spacing, data[i * height + j], 
+				vec8Set(i * spacing, j * spacing, data[i * height + j],
 					(double)i, (double)j, 0.0, 0.0, 0.0, vert);
 			}
 		/* Build the triangles. */
@@ -555,9 +555,9 @@ int meshInitializeLandscape(meshMesh *mesh, int width, int height,
 				b = (i + 1) * height + j;
 				c = (i + 1) * height + (j + 1);
 				d = i * height + (j + 1);
-				diffSWNE = fabs(meshGetVertexPointer(mesh, a)[2] - 
+				diffSWNE = fabs(meshGetVertexPointer(mesh, a)[2] -
 					meshGetVertexPointer(mesh, c)[2]);
-				diffSENW = fabs(meshGetVertexPointer(mesh, b)[2] - 
+				diffSENW = fabs(meshGetVertexPointer(mesh, b)[2] -
 					meshGetVertexPointer(mesh, d)[2]);
 				if (diffSENW < diffSWNE) {
 					meshSetTriangle(mesh, index, d, a, b);
@@ -573,12 +573,12 @@ int meshInitializeLandscape(meshMesh *mesh, int width, int height,
 	return error;
 }
 
-/* Given a landscape, such as that built by meshInitializeLandscape. Builds a 
-new landscape mesh by extracting triangles based on how horizontal they are. If 
-noMoreThan is true, then triangles are kept that deviate from horizontal by no more than angle. If noMoreThan is false, then triangles are kept that deviate 
-from horizontal by more than angle. Don't forget to call meshDestroy when 
+/* Given a landscape, such as that built by meshInitializeLandscape. Builds a
+new landscape mesh by extracting triangles based on how horizontal they are. If
+noMoreThan is true, then triangles are kept that deviate from horizontal by no more than angle. If noMoreThan is false, then triangles are kept that deviate
+from horizontal by more than angle. Don't forget to call meshDestroy when
 finished. Warning: May contain extraneous vertices not used by any triangle. */
-int meshInitializeDissectedLandscape(meshMesh *mesh, const meshMesh *land, 
+int meshInitializeDissectedLandscape(meshMesh *mesh, const meshMesh *land,
 		double angle, int noMoreThan) {
 	int error, i, j = 0, triNum = 0;
 	int *tri, *newTri;
@@ -586,10 +586,10 @@ int meshInitializeDissectedLandscape(meshMesh *mesh, const meshMesh *land,
 	/* Count the triangles that are nearly horizontal. */
 	for (i = 0; i < land->triNum; i += 1) {
 		tri = meshGetTrianglePointer(land, i);
-		meshTrueNormal(meshGetVertexPointer(land, tri[0]), 
-			meshGetVertexPointer(land, tri[1]), 
+		meshTrueNormal(meshGetVertexPointer(land, tri[0]),
+			meshGetVertexPointer(land, tri[1]),
 			meshGetVertexPointer(land, tri[2]), normal);
-		if ((noMoreThan && normal[2] >= cos(angle)) || 
+		if ((noMoreThan && normal[2] >= cos(angle)) ||
 				(!noMoreThan && normal[2] < cos(angle)))
 			triNum += 1;
 	}
@@ -600,10 +600,10 @@ int meshInitializeDissectedLandscape(meshMesh *mesh, const meshMesh *land,
 		/* Copy just the horizontal triangles. */
 		for (i = 0; i < land->triNum; i += 1) {
 			tri = meshGetTrianglePointer(land, i);
-			meshTrueNormal(meshGetVertexPointer(land, tri[0]), 
-				meshGetVertexPointer(land, tri[1]), 
+			meshTrueNormal(meshGetVertexPointer(land, tri[0]),
+				meshGetVertexPointer(land, tri[1]),
 				meshGetVertexPointer(land, tri[2]), normal);
-			if ((noMoreThan && normal[2] >= cos(angle)) || 
+			if ((noMoreThan && normal[2] >= cos(angle)) ||
 					(!noMoreThan && normal[2] < cos(angle))) {
 				newTri = meshGetTrianglePointer(mesh, j);
 				newTri[0] = tri[0];
@@ -621,33 +621,144 @@ int meshInitializeDissectedLandscape(meshMesh *mesh, const meshMesh *land,
 
 /*** Rendering ***/
 
-/* Renders the mesh. But if the mesh and the shading have differing values for 
+/* NOTE: This still does not work */
+
+void renderTriangle(const meshMesh *mesh, depthBuffer *buf, const double viewport[4][4],
+		const shaShading *sha, const double unif[], const texTexture *tex[],
+		const double vary0[], const double vary1[], const double vary2[]) {
+
+	double vary0Transformed[sha->varyDim], vary1Transformed[sha->varyDim], vary2Transformed[sha->varyDim];
+
+// 	Transform viewport
+	mat441Multiply(viewport, vary0, vary0Transformed);
+	mat441Multiply(viewport, vary1, vary1Transformed);
+	mat441Multiply(viewport, vary2, vary2Transformed);
+
+	vecCopy(sha->varyDim - 4, &vary0[4], &vary0Transformed[4]);
+	vecCopy(sha->varyDim - 4, &vary1[4], &vary1Transformed[4]);
+	vecCopy(sha->varyDim - 4, &vary2[4], &vary2Transformed[4]);
+
+//	Homogeneous division
+	vecScale(sha->varyDim, 1 / vary0Transformed[3], vary0Transformed, vary0Transformed);
+	vecScale(sha->varyDim, 1 / vary1Transformed[3], vary1Transformed, vary1Transformed);
+	vecScale(sha->varyDim, 1 / vary2Transformed[3], vary2Transformed, vary2Transformed);
+
+// 	Copy 1/w to vary (perspective correction)
+	vary0Transformed[3] = 1 / vary0[3];
+	vary1Transformed[3] = 1 / vary1[3];
+	vary2Transformed[3] = 1 / vary2[3];
+
+// 	Call triRender on this triangle
+    triRender(sha, buf, unif, tex, vary0Transformed, vary1Transformed, vary2Transformed);
+}
+
+void findNewVertex(int varyDim, const double varyClipped[], const double varyKept[], double varyNew[]) {
+	double t = (varyClipped[2] + varyClipped[3]) / (varyClipped[2] + varyClipped[3] - varyKept[2] - varyKept[3]);
+
+	double bMinusA[varyDim], scaledBMinusA[varyDim];
+	vecSubtract(varyDim, varyKept, varyClipped, bMinusA);
+	vecScale(varyDim, t, bMinusA, scaledBMinusA);
+	vecAdd(varyDim, scaledBMinusA, varyClipped, varyNew);
+}
+
+void clip2Vertices(const meshMesh *mesh, depthBuffer *buf, const double viewport[4][4],
+		const shaShading *sha, const double unif[], const texTexture *tex[],
+		double varyAClipped[], double varyBClipped[], double varyC[]) {
+
+	double newVaryA[sha->varyDim], newVaryB[sha->varyDim];
+	findNewVertex(sha->varyDim, varyAClipped, varyC, newVaryA);
+	findNewVertex(sha->varyDim, varyBClipped, varyC, newVaryB);
+	renderTriangle(mesh, buf, viewport, sha, unif, tex, newVaryA, newVaryB, varyC);
+}
+
+void clip1Vertex(const meshMesh *mesh, depthBuffer *buf, const double viewport[4][4],
+		const shaShading *sha, const double unif[], const texTexture *tex[],
+		double varyAClipped[], double varyB[], double varyC[]) {
+
+	if(varyAClipped[2] + varyAClipped[3] <= 0.00000001 && varyAClipped[2] + varyAClipped[3] >= 0.00000001)
+	printf("Equal w, z 0\n");
+	if(varyB[2] + varyB[3] <= 0.00000001 && varyB[2] + varyB[3] >= 0.00000001)
+	printf("Equal w, z 1\n");
+	if(varyC[2] + varyC[3] <= 0.00000001 && varyC[2] + varyC[3] >= 0.00000001)
+	printf("Equal w, z 2\n");
+
+	// Get new clipped vertex
+	double newVaryD[sha->varyDim], newVaryE[sha->varyDim];
+	findNewVertex(sha->varyDim, varyAClipped, varyB, newVaryD);
+	findNewVertex(sha->varyDim, varyAClipped, varyC, newVaryE);
+
+	// Draw 2 triangles
+	renderTriangle(mesh, buf, viewport, sha, unif, tex, newVaryD, varyB, newVaryE);
+	renderTriangle(mesh, buf, viewport, sha, unif, tex, varyB, varyC, newVaryE);
+}
+
+/* Renders the mesh. But if the mesh and the shading have differing values for
 attrDim, then prints an error message and does not render anything. */
-void meshRender(const meshMesh *mesh, depthBuffer *buf, const shaShading *sha, 
-		const double unif[], const texTexture *tex[]) {
+void meshRender(const meshMesh *mesh, depthBuffer *buf, const double viewport[4][4],
+		const shaShading *sha, const double unif[], const texTexture *tex[]) {
 	if(mesh->attrDim != sha->attrDim) {
 	    printf("Could not render mesh: attrDim did not agree.\n");
 	    return;
 	}
-	
+
 	int i;
 	for(i = 0; i < mesh->triNum; i++) {
 	    int *triangle = meshGetTrianglePointer(mesh, i); // Gets the 3 vertex pointers
-	    
+
 // 	    Get attribute arrays for the vertices of triangle
 	    double *vert0 = meshGetVertexPointer(mesh, triangle[0]);
 	    double *vert1 = meshGetVertexPointer(mesh, triangle[1]);
 	    double *vert2 = meshGetVertexPointer(mesh, triangle[2]);
-	    
+
 // 	    Transform varying arrays
         double vary0[sha->varyDim], vary1[sha->varyDim], vary2[sha->varyDim];
         sha->transformVertex(sha->unifDim, unif, sha->attrDim, vert0, sha->varyDim, vary0);
-        sha->transformVertex(sha->unifDim, unif, sha->attrDim, vert1, sha->varyDim, vary1);
-        sha->transformVertex(sha->unifDim, unif, sha->attrDim, vert2, sha->varyDim, vary2);
-	    
-// 	    Call triRender on this triangle
-        triRender(sha, buf, unif, tex, vary0, vary1, vary2);
+		sha->transformVertex(sha->unifDim, unif, sha->attrDim, vert1, sha->varyDim, vary1);
+		sha->transformVertex(sha->unifDim, unif, sha->attrDim, vert2, sha->varyDim, vary2);
+
+// 		Clipping
+		if(vary0[3] <= 0 || vary0[3] < -vary0[2]) {
+			if(vary1[3] <= 0 || vary1[3] < -vary1[2]) {
+				if(vary2[3] <= 0 || vary2[3] < -vary2[2]) {
+					// Don't draw: all 3 vertices clipped
+				} else {
+					// Vertices 0, 1 are both clipped:
+					// Render 1 triangle
+					clip2Vertices(mesh, buf, viewport, sha, unif, tex, vary0, vary1, vary2);
+				}
+			} else {
+				if(vary2[3] <= 0 || vary2[3] < -vary2[2]) {
+					// Vertices 0, 2 are both clipped:
+					// Render 1 triangle
+					clip2Vertices(mesh, buf, viewport, sha, unif, tex, vary2, vary0, vary1);
+				} else {
+					// Vertex 0 is clipped
+					// Render 2 triangles (quadrilateral)
+					clip1Vertex(mesh, buf, viewport, sha, unif, tex, vary0, vary1, vary2);
+				}
+			}
+		} else {
+			// Vertex 0 is not clipped
+			if(vary1[3] <= 0 || vary1[3] < -vary1[2]) {
+				if(vary2[3] <= 0 || vary2[3] < -vary2[2]) {
+					// Vertices 1, 2 are both clipped:
+					// Render 1 triangle
+					clip2Vertices(mesh, buf, viewport, sha, unif, tex, vary1, vary2, vary0);
+				} else {
+					// Vertex 1 is clipped:
+					// Render 2 triangles (quadrilateral)
+					clip1Vertex(mesh, buf, viewport, sha, unif, tex, vary1, vary2, vary0);
+				}
+			} else {
+				if(vary2[3] <= 0 || vary2[3] < -vary2[2]) {
+					// Vertex 2 is clipped:
+					// Render 2 triangles (quadrilateral)
+					clip1Vertex(mesh, buf, viewport, sha, unif, tex, vary2, vary0, vary1);
+				} else {
+					// No vertices are clipped, render as usual
+					renderTriangle(mesh, buf, viewport, sha, unif, tex, vary0, vary1, vary2);
+				}
+			}
+		}
 	}
 }
-
-

@@ -39,7 +39,7 @@ double findyBound(const double a[2], const double b[2], int x0, int upper){
 /* Finds the values p and q that are used in the interpolation algorithm.
 Returns in vector form, [p q].
 */
-void findPQ(const double x[2], const double a[2], double mInv[2][2], 
+void findPQ(const double x[2], const double a[2], double mInv[2][2],
         double pq[2]) {
 
     double xMinusA[2];
@@ -50,19 +50,19 @@ void findPQ(const double x[2], const double a[2], double mInv[2][2],
 
 void interpolateVary(const int varyDim, const double a[], const double b[], const double c[],
         const double pq[2], const double x[2], double vary[]) {
-    
+
 //  Declare all the vectors we need to do the linear equation
     double bMinusA[varyDim], cMinusA[varyDim], scaledP[varyDim], scaledQ[varyDim], pPlusQ[varyDim], st[varyDim];
-    
+
     vecSubtract(varyDim, b, a, bMinusA);
     vecSubtract(varyDim, c, a, cMinusA);
-    
+
     vecScale(varyDim, pq[0], bMinusA, scaledP);
     vecScale(varyDim, pq[1], cMinusA, scaledQ);
-    
+
     vecAdd(varyDim, scaledP, scaledQ, pPlusQ);
     vecAdd(varyDim, a, pPlusQ, vary);
-    
+
 //  Set the first two elements of vary, which are the current rasterizing coordinates
     vary[0] = x[0];
     vary[1] = x[1];
@@ -84,13 +84,13 @@ void triRender(const shaShading *sha, depthBuffer *buf,
         int x0;
         int lowery;
         int uppery;
-        
+
 //      Generate m from its columns
         double bMinusA[2], cMinusA[2], m[2][2], mInv[2][2], det;
         double aCoord[2] = {a[0], a[1]};
         double bCoord[2] = {b[0], b[1]};
         double cCoord[2] = {c[0], c[1]};
-        
+
         vecSubtract(2, bCoord, aCoord, bMinusA);
         vecSubtract(2, cCoord, aCoord, cMinusA);
         mat22Columns(bMinusA, cMinusA, m);
@@ -100,95 +100,103 @@ void triRender(const shaShading *sha, depthBuffer *buf,
         if(det <= 0) {
             return;
         }
-        
+
         double pq[2], pointRGBD[4], vary[sha->varyDim];
-        
+
         //1st case where the location "b" is to the right of "c"
         if(b[0] > c[0]) {
             //1st loop from the leftmost point, "a", until we get to c0
             for(x0 = (int)ceil(a[0]); x0 <= (int)floor(c[0]); x0 = x0 + 1){
-                //find upper and lower values of y and then fill in all pixels between them
-                lowery = (int)ceil(findyBound(a, b, x0, 0));
-                uppery = (int)floor(findyBound(a, c, x0, 1));
-                int y;
-                for(y = lowery; y <= uppery; y = y + 1) {
-                    if((x0 <= buf->width && x0 >= 0) && (y <= buf->height && y >= 0)) {
-                        double currentX[2] = {(double)x0, (double)y};
-                        findPQ(currentX, a, mInv, pq);
-                        interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
-                        
-                        sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
-                        if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
-                            pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
-                            depthSetDepth(buf, x0, y, pointRGBD[3]);
+                if(x0 <= buf->width && x0 >= 0) {
+                    //find upper and lower values of y and then fill in all pixels between them
+                    lowery = (int)ceil(findyBound(a, b, x0, 0));
+                    uppery = (int)floor(findyBound(a, c, x0, 1));
+                    int y;
+                    for(y = lowery; y <= uppery; y = y + 1) {
+                        if(y <= buf->height && y >= 0) {
+                            double currentX[2] = {(double)x0, (double)y};
+                            findPQ(currentX, a, mInv, pq);
+                            interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
+
+                            sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
+                            if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
+                                pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
+                                depthSetDepth(buf, x0, y, pointRGBD[3]);
+                            }
                         }
                     }
                 }
             }
-            
+
             //2nd loop from floor(c0) + 1 until we get to b0
             for(x0 = (int)floor(c[0]) + 1; x0 <= (int)floor(b[0]); x0 = x0 + 1) {
-                //find upper and lower values of y and then fill in all pixels between them
-                lowery = (int)ceil(findyBound(a, b, x0, 0));
-                uppery = (int)floor(findyBound(c, b, x0, 1));
-                
-                int y;
-                for(y = lowery; y <= uppery; y = y + 1) {
-                    if((x0 <= buf->width && x0 >= 0) && (y <= buf->height && y >= 0)) {
-                        double currentX[2] = {(double)x0, (double)y};
-                        findPQ(currentX, a, mInv, pq);
-                        interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
-                        
-                        sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
-                        if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
-                            pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
-                            depthSetDepth(buf, x0, y, pointRGBD[3]);
+                if(x0 <= buf->width && x0 >= 0) {
+                    //find upper and lower values of y and then fill in all pixels between them
+                    lowery = (int)ceil(findyBound(a, b, x0, 0));
+                    uppery = (int)floor(findyBound(c, b, x0, 1));
+
+                    int y;
+                    for(y = lowery; y <= uppery; y = y + 1) {
+                        if(y <= buf->height && y >= 0) {
+                            double currentX[2] = {(double)x0, (double)y};
+                            findPQ(currentX, a, mInv, pq);
+                            interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
+
+                            sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
+                            if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
+                                pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
+                                depthSetDepth(buf, x0, y, pointRGBD[3]);
+                            }
                         }
                     }
                 }
             }
         }
-        
+
         //2nd case where the location "b" is to the left of "c"
         else {
             //1st loop from the leftmost point, a0, to b0
             for(x0 = (int)ceil(a[0]); x0 <= (int)floor(b[0]); x0 = x0 + 1){
-                //find upper and lower values of y and then fill in all pixels between them
-                lowery = (int)ceil(findyBound(a, b, x0, 0));
-                uppery = (int)floor(findyBound(a, c, x0, 1));
-                int y;
-                for(y = lowery; y <= uppery; y = y + 1){
-                    if((x0 <= buf->width && x0 >= 0) && (y <= buf->height && y >= 0)) {
-                        double currentX[2] = {(double)x0, (double)y};
-                        findPQ(currentX, a, mInv, pq);
-                        interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
-                        
-                        sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
-                        if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
-                            pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
-                            depthSetDepth(buf, x0, y, pointRGBD[3]);
+                if(x0 <= buf->width && x0 >= 0) {
+                    //find upper and lower values of y and then fill in all pixels between them
+                    lowery = (int)ceil(findyBound(a, b, x0, 0));
+                    uppery = (int)floor(findyBound(a, c, x0, 1));
+                    int y;
+                    for(y = lowery; y <= uppery; y = y + 1){
+                        if(y <= buf->height && y >= 0) {
+                            double currentX[2] = {(double)x0, (double)y};
+                            findPQ(currentX, a, mInv, pq);
+                            interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
+
+                            sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
+                            if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
+                                pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
+                                depthSetDepth(buf, x0, y, pointRGBD[3]);
+                            }
                         }
                     }
                 }
             }
-            
+
             //2nd loop from floor(b0) + 1 to c0
             for(x0 = (int)floor(b[0]) + 1; x0 <= (int)floor(c[0]); x0 = x0 + 1) {
-                //find upper and lower values of y and then fill in all pixels between them
-                lowery = (int)ceil(findyBound(b, c, x0, 0));
-                uppery = (int)floor(findyBound(a, c, x0, 1));
-                
-                int y;
-                for(y = lowery; y <= uppery; y = y + 1) {
-                    if((x0 <= buf->width && x0 >= 0) && (y <= buf->height && y >= 0)) {
-                        double currentX[2] = {(double)x0, (double)y};
-                        findPQ(currentX, a, mInv, pq);
-                        interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
-                        
-                        sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
-                        if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
-                            pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
-                            depthSetDepth(buf, x0, y, pointRGBD[3]);
+                if(x0 <= buf->width && x0 >= 0) {
+                    //find upper and lower values of y and then fill in all pixels between them
+                    lowery = (int)ceil(findyBound(b, c, x0, 0));
+                    uppery = (int)floor(findyBound(a, c, x0, 1));
+
+                    int y;
+                    for(y = lowery; y <= uppery; y = y + 1) {
+                        if(y <= buf->height && y >= 0) {
+                            double currentX[2] = {(double)x0, (double)y};
+                            findPQ(currentX, a, mInv, pq);
+                            interpolateVary(sha->varyDim, a, b, c, pq, currentX, vary);
+
+                            sha->colorPixel(sha->unifDim, unif, sha->texNum, tex, sha->varyDim, vary, pointRGBD);
+                            if(pointRGBD[3] < depthGetDepth(buf, x0, y)) {
+                                pixSetRGB(x0, y, pointRGBD[0], pointRGBD[1], pointRGBD[2]);
+                                depthSetDepth(buf, x0, y, pointRGBD[3]);
+                            }
                         }
                     }
                 }
