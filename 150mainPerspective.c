@@ -18,9 +18,9 @@
 #include "130shading.c"
 #include "130depth.c"
 #include "130triangle.c"
-#include "130mesh.c"
+#include "160mesh.c"
 #include "140isometry.c"
-#include "140camera.c"
+#include "150camera.c"
 #include "140landscape.c"
 
 #define mainSCREENSIZE 512
@@ -38,7 +38,8 @@
 #define mainVARYX 0
 #define mainVARYY 1
 #define mainVARYZ 2
-#define mainVARYWORLDZ 3
+#define mainVARYW 3
+#define mainVARYWORLDZ 4
 #define mainUNIFR 0
 #define mainUNIFG 1
 #define mainUNIFB 2
@@ -48,12 +49,12 @@
 #define mainUNIFMAX 6
 #define mainUNIFCAMERA 7
 
-/* Solid colors, tinted from dark (low saturation at low elevation) to light 
+/* Solid colors, tinted from dark (low saturation at low elevation) to light
 (high saturation at high elevation). */
-void colorPixel(int unifDim, const double unif[], int texNum, 
-		const texTexture *tex[], int varyDim, const double vary[], 
+void colorPixel(int unifDim, const double unif[], int texNum,
+		const texTexture *tex[], int varyDim, const double vary[],
 		double rgbd[4]) {
-	double frac = (vary[mainVARYWORLDZ] - unif[mainUNIFMIN]) 
+	double frac = (vary[mainVARYWORLDZ] - unif[mainUNIFMIN])
 		/ (unif[mainUNIFMAX] - unif[mainUNIFMIN]);
 	rgbd[0] = unif[mainUNIFR] * (frac + 1.0) / 2.0;
 	rgbd[1] = unif[mainUNIFG] * (frac + 1.0) / 2.0;
@@ -61,16 +62,16 @@ void colorPixel(int unifDim, const double unif[], int texNum,
 	rgbd[3] = vary[mainVARYZ];
 }
 
-void transformVertex(int unifDim, const double unif[], int attrDim, 
+void transformVertex(int unifDim, const double unif[], int attrDim,
 		const double attr[], int varyDim, double vary[]) {
 	double attrHom[4] = {attr[0], attr[1], attr[2], 1.0};
 	double worldHom[4], varyHom[4];
-	/* The modeling transformation is just Z-translation. So this code is much 
+	/* The modeling transformation is just Z-translation. So this code is much
 	simpler than the usual matrix multiplication. */
 	vecCopy(4, attrHom, worldHom);
 	worldHom[2] += unif[mainUNIFMODELING];
 	mat441Multiply((double(*)[4])(&unif[mainUNIFCAMERA]), worldHom, varyHom);
-	vecCopy(3, varyHom, vary);
+	vecCopy(4, varyHom, vary);
 	vary[mainVARYWORLDZ] = worldHom[2];
 }
 
@@ -86,30 +87,30 @@ double cameraRho = 256.0, cameraPhi = M_PI / 4.0, cameraTheta = 0.0;
 /* Meshes to be rendered. */
 meshMesh grass;
 double unifGrass[3 + 1 + 3 + 16] = {
-	0.0, 1.0, 0.0, 
-	0.0, 
-	0.0, 0.0, 0.0, 
-	1.0, 0.0, 0.0, 0.0, 
-	0.0, 1.0, 0.0, 0.0, 
-	0.0, 0.0, 1.0, 0.0, 
+	0.0, 1.0, 0.0,
+	0.0,
+	0.0, 0.0, 0.0,
+	1.0, 0.0, 0.0, 0.0,
+	0.0, 1.0, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
 	0.0, 0.0, 0.0, 1.0};
 meshMesh rock;
 double unifRock[3 + 1 + 3 + 16] = {
-	1.0, 1.0, 1.0, 
-	0.0, 
-	0.0, 0.0, 0.0, 
-	1.0, 0.0, 0.0, 0.0, 
-	0.0, 1.0, 0.0, 0.0, 
-	0.0, 0.0, 1.0, 0.0, 
+	1.0, 1.0, 1.0,
+	0.0,
+	0.0, 0.0, 0.0,
+	1.0, 0.0, 0.0, 0.0,
+	0.0, 1.0, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
 	0.0, 0.0, 0.0, 1.0};
 meshMesh water;
 double unifWater[3 + 1 + 3 + 16] = {
-	0.0, 0.0, 1.0, 
-	0.0, 
-	0.0, 0.0, 0.0, 
-	1.0, 0.0, 0.0, 0.0, 
-	0.0, 1.0, 0.0, 0.0, 
-	0.0, 0.0, 1.0, 0.0, 
+	0.0, 0.0, 1.0,
+	0.0,
+	0.0, 0.0, 0.0,
+	1.0, 0.0, 0.0, 0.0,
+	0.0, 1.0, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
 	0.0, 0.0, 0.0, 1.0};
 
 /*** User interface ***/
@@ -118,18 +119,17 @@ void render(void) {
 	double view[4][4], projInvIsom[4][4], viewProjInvIsom[4][4];
 	camGetProjectionInverseIsometry(&cam, projInvIsom);
 	mat44Viewport(mainSCREENSIZE, mainSCREENSIZE, view);
-	mat444Multiply(view, projInvIsom, viewProjInvIsom);
 	pixClearRGB(0.0, 0.0, 0.0);
 	depthClearDepths(&buf, 1000000000.0);
-	vecCopy(16, (double *)viewProjInvIsom, &unifGrass[mainUNIFCAMERA]);
-	meshRender(&grass, &buf, &sha, unifGrass, NULL);
-	vecCopy(16, (double *)viewProjInvIsom, &unifRock[mainUNIFCAMERA]);
-	meshRender(&rock, &buf, &sha, unifRock, NULL);
-	vecCopy(16, (double *)viewProjInvIsom, &unifWater[mainUNIFCAMERA]);
-	meshRender(&water, &buf, &sha, unifWater, NULL);
+	vecCopy(16, (double *)projInvIsom, &unifGrass[mainUNIFCAMERA]);
+	meshRender(&grass, &buf, view, &sha, unifGrass, NULL);
+	vecCopy(16, (double *)projInvIsom, &unifRock[mainUNIFCAMERA]);
+	meshRender(&rock, &buf, view, &sha, unifRock, NULL);
+	vecCopy(16, (double *)projInvIsom, &unifWater[mainUNIFCAMERA]);
+	meshRender(&water, &buf, view, &sha, unifWater, NULL);
 }
 
-void handleKeyAny(int key, int shiftIsDown, int controlIsDown, 
+void handleKeyAny(int key, int shiftIsDown, int controlIsDown,
 		int altOptionIsDown, int superCommandIsDown) {
 	if (key == GLFW_KEY_A)
 		cameraTheta -= M_PI / 100;
@@ -159,7 +159,11 @@ void handleKeyAny(int key, int shiftIsDown, int controlIsDown,
 		unifWater[mainUNIFMODELING] -= 0.1;
 	else if (key == GLFW_KEY_U)
 		unifWater[mainUNIFMODELING] += 0.1;
-	camSetFrustum(&cam, M_PI / 6.0, cameraRho, 10.0, mainSCREENSIZE, 
+	else if (key == GLFW_KEY_B)
+		camSetProjectionType(&cam, camPERSPECTIVE);
+	else if (key == GLFW_KEY_N)
+		camSetProjectionType(&cam, camORTHOGRAPHIC);
+	camSetFrustum(&cam, M_PI / 6.0, cameraRho, 10.0, mainSCREENSIZE,
 		mainSCREENSIZE);
 	camLookAt(&cam, cameraTarget, cameraRho, cameraPhi, cameraTheta);
 }
@@ -183,7 +187,7 @@ int main(void) {
 		landFault(landNum, landNum, (double *)landData, 1.5 - i * 0.04);
 	for (i = 0; i < 4; i += 1)
 		landBlur(landNum, landNum, (double *)landData);
-	landStatistics(landNum, landNum, (double *)landData, &landMin, &landMean, 
+	landStatistics(landNum, landNum, (double *)landData, &landMin, &landMean,
 		&landMax);
 	double waterData[4] = {landMin, landMin, landMin, landMin};
 	unifGrass[mainUNIFMIN] = landMin;
@@ -201,16 +205,16 @@ int main(void) {
 		return 1;
 	else if (depthInitialize(&buf, mainSCREENSIZE, mainSCREENSIZE) != 0)
 		return 2;
-	else if (meshInitializeLandscape(&land, landNum, landNum, 1.0, 
+	else if (meshInitializeLandscape(&land, landNum, landNum, 1.0,
 			(double *)landData) != 0)
 		return 3;
-	else if (meshInitializeDissectedLandscape(&grass, &land, M_PI / 4.0, 
+	else if (meshInitializeDissectedLandscape(&grass, &land, M_PI / 4.0,
 			1) != 0)
 		return 4;
-	else if (meshInitializeDissectedLandscape(&rock, &land, M_PI / 4.0, 
+	else if (meshInitializeDissectedLandscape(&rock, &land, M_PI / 4.0,
 			0) != 0)
 		return 5;
-	else if (meshInitializeLandscape(&water, 2, 2, landNum - 1.0, 
+	else if (meshInitializeLandscape(&water, 2, 2, landNum - 1.0,
 			(double *)waterData) != 0)
 		return 6;
 	else {
@@ -218,14 +222,14 @@ int main(void) {
 		/* Continue configuring scene. */
 		sha.unifDim = 3 + 1 + 3 + 16;
 		sha.attrDim = 3 + 2 + 3;
-		sha.varyDim = 4;
+		sha.varyDim = 5;
 		sha.colorPixel = colorPixel;
 		sha.transformVertex = transformVertex;
 		sha.texNum = 0;
 		camSetProjectionType(&cam, camORTHOGRAPHIC);
-		camSetFrustum(&cam, M_PI / 6.0, cameraRho, 10.0, mainSCREENSIZE, 
+		camSetFrustum(&cam, M_PI / 6.0, cameraRho, 10.0, mainSCREENSIZE,
 			mainSCREENSIZE);
-		vec3Set(landNum / 2.0, landNum / 2.0, 
+		vec3Set(landNum / 2.0, landNum / 2.0,
 			landData[landNum / 2][landNum / 2], cameraTarget);
 		camLookAt(&cam, cameraTarget, cameraRho, cameraPhi, cameraTheta);
 		/* User interface. */
@@ -242,5 +246,3 @@ int main(void) {
 		return 0;
 	}
 }
-
-
