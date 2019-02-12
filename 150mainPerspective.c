@@ -54,8 +54,11 @@
 void colorPixel(int unifDim, const double unif[], int texNum,
 		const texTexture *tex[], int varyDim, const double vary[],
 		double rgbd[4]) {
-	double frac = (vary[mainVARYWORLDZ] - unif[mainUNIFMIN])
+
+	double z = vary[mainVARYWORLDZ] / vary[mainVARYW];
+	double frac = (z - unif[mainUNIFMIN])
 		/ (unif[mainUNIFMAX] - unif[mainUNIFMIN]);
+	printf("frac %f\n", vary[mainVARYWORLDZ]);
 	rgbd[0] = unif[mainUNIFR] * (frac + 1.0) / 2.0;
 	rgbd[1] = unif[mainUNIFG] * (frac + 1.0) / 2.0;
 	rgbd[2] = unif[mainUNIFB] * (frac + 1.0) / 2.0;
@@ -159,11 +162,13 @@ void handleKeyAny(int key, int shiftIsDown, int controlIsDown,
 		unifWater[mainUNIFMODELING] -= 0.1;
 	else if (key == GLFW_KEY_U)
 		unifWater[mainUNIFMODELING] += 0.1;
-	else if (key == GLFW_KEY_B)
+	else if (key == GLFW_KEY_B) {
 		camSetProjectionType(&cam, camPERSPECTIVE);
-	else if (key == GLFW_KEY_N)
+		printf("Perspective!\n");
+	} else if (key == GLFW_KEY_N) {
 		camSetProjectionType(&cam, camORTHOGRAPHIC);
-	camSetFrustum(&cam, M_PI / 6.0, cameraRho, 10.0, mainSCREENSIZE,
+		printf("Orthographic!\n");
+	} camSetFrustum(&cam, M_PI / 6.0, cameraRho, 10.0, mainSCREENSIZE,
 		mainSCREENSIZE);
 	camLookAt(&cam, cameraTarget, cameraRho, cameraPhi, cameraTheta);
 }
