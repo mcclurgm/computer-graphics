@@ -1,6 +1,6 @@
 
 
-/*** In general dimensions 
+/*** In general dimensions
 Michael McClurg and Vermilion Villarreal
 ***/
 
@@ -40,13 +40,13 @@ void vecScale(int dim, double c, const double w[], double cTimesW[]) {
 
 /*** In specific dimensions ***/
 
-/* By the way, there is a way to write a single vecSet function that works in 
-all dimensions. The module stdarg.h, which is part of the C standard library, 
+/* By the way, there is a way to write a single vecSet function that works in
+all dimensions. The module stdarg.h, which is part of the C standard library,
 lets you write variable-arity functions. The general vecSet would look like
 	void vecSet(int dim, double a[], ...)
-where the '...' represents dim numbers to be loaded into a. We're not going to 
-take this approach for two reasons. First, I try not to burden you with 
-learning a lot of C that isn't strictly necessary. Second, the variable-arity 
+where the '...' represents dim numbers to be loaded into a. We're not going to
+take this approach for two reasons. First, I try not to burden you with
+learning a lot of C that isn't strictly necessary. Second, the variable-arity
 feature is a bit dangerous, in that it provides no type checking. */
 
 /* Copies three numbers into a three-dimensional vector. */
@@ -65,7 +65,7 @@ void vec4Set(double a0, double a1, double a2, double a3, double a[4]) {
 }
 
 /* Copies eight numbers into a eight-dimensional vector. */
-void vec8Set(double a0, double a1, double a2, double a3, double a4, double a5, 
+void vec8Set(double a0, double a1, double a2, double a3, double a4, double a5,
 		double a6, double a7, double a[8]) {
 	a[0] = a0;
 	a[1] = a1;
@@ -79,11 +79,12 @@ void vec8Set(double a0, double a1, double a2, double a3, double a4, double a5,
 
 /* Returns the dot product of the vectors v and w. */
 double vecDot(int dim, const double v[], const double w[]) {
-    int i, total = 0;
+    int i;
+	double total = 0;
     for(i = 0; i < dim; i++) {
         total += v[i] * w[i];
     }
-    
+
     return total;
 }
 
@@ -93,23 +94,23 @@ double vecLength(int dim, const double v[]) {
     return sqrt(mag2);
 }
 
-/* Returns the length of the vector v. If the length is non-zero, then also 
-places a normalized (length-1) version of v into unit. The output can safely 
+/* Returns the length of the vector v. If the length is non-zero, then also
+places a normalized (length-1) version of v into unit. The output can safely
 alias the input. */
 double vecUnit(int dim, const double v[], double unit[]) {
     double mag = vecLength(dim, v);
-    
+
     if(mag != 0.0) {
         int i;
         for(i = 0; i < dim; i++) {
             unit[i] = v[i] / mag;
         }
     }
-    
+
     return mag;
 }
 
-/* Computes the cross product of v and w, and places it into vCrossW. The 
+/* Computes the cross product of v and w, and places it into vCrossW. The
 output CANNOT safely alias the input. */
 void vec3Cross(const double v[3], const double w[3], double vCrossW[3]) {
     vCrossW[0] = (v[1] * w[2]) - (v[2] * w[1]);
@@ -117,8 +118,8 @@ void vec3Cross(const double v[3], const double w[3], double vCrossW[3]) {
     vCrossW[2] = (v[0] * w[1]) - (v[1] * w[0]);
 }
 
-/* Computes the vector v from its spherical coordinates. rho >= 0.0 is the 
-radius. 0 <= phi <= pi is the co-latitude. -pi <= theta <= pi is the longitude 
+/* Computes the vector v from its spherical coordinates. rho >= 0.0 is the
+radius. 0 <= phi <= pi is the co-latitude. -pi <= theta <= pi is the longitude
 or azimuth. */
 void vec3Spherical(double rho, double phi, double theta, double v[3]) {
     v[0] = rho * sin(phi) * cos(theta);
