@@ -1,13 +1,10 @@
 typedef struct shaShading shaShading;
 
 struct shaShading {
-    int unifDim;
-    int texNum;
-    int attrDim;
-    int varyDim;
-    void (*colorPixel)(int unifDim, const double unif[], int texNum, 
-		const texTexture *tex[], int varyDim, const double vary[], 
+    int unifDim, attrDim, texNum, varyDim;
+	void (*colorPixel)(int unifDim, const double unif[], int texNum,
+		const texTexture *tex[], int varyDim, const double vary[],
 		double rgbd[4]);
-	void (*transformVertex)(int unifDim, const double unif[], int attrDim, 
+	void (*transformVertex)(int unifDim, const double unif[], int attrDim,
 		const double attr[], int varyDim, double vary[]);
 };

@@ -1,4 +1,10 @@
-
+/* Lighting warm-up questions:
+1. 24 vertices. If there are no shared corners, there should be
+   6 sides * 4 vertices per side = 24 vertices.
+2. The NOP components appear to point in the same direction as the XYZ, with
+   a different magnitude.
+3. The XYZ vectors get bigger, but the NOP stays the same. It seems like the
+   NOP components are roughly the XYZ components divided by the radius.
 
 
 /* On macOS, compile with...
@@ -11,17 +17,7 @@
 #include <time.h>
 #include <GLFW/glfw3.h>
 
-#include "000pixel.h"
-#include "120vector.c"
-#include "140matrix.c"
-#include "040texture.c"
-#include "130shading.c"
-#include "130depth.c"
-#include "130triangle.c"
-#include "160mesh.c"
-#include "140isometry.c"
-#include "150camera.c"
-#include "140landscape.c"
+#include "170engine.h"
 
 #define mainSCREENSIZE 512
 
@@ -100,6 +96,7 @@ double cameraTarget[3] = {0.0, 0.0, 0.0};
 double cameraRho = 400.0, cameraPhi = M_PI / 4.0, cameraTheta = 0.0;
 /* Meshes to be rendered. */
 meshMesh bliss;
+meshMesh sphere;
 texTexture texture;
 const texTexture *textures[1] = {&texture};
 const texTexture **tex = textures;
@@ -174,10 +171,17 @@ int main(void) {
 		return 2;
 	else if (meshInitializeBox(&bliss, 100, 350, 100, 350, 100, 350) != 0)
 		return 3;
-	else if (texInitializeFile(&texture, "bliss.jpg") != 0) {
+	else if (meshInitializeSphere(&sphere, 1000, 10, 100) != 0) {
 		return 4;
 	}
+	else if (texInitializeFile(&texture, "bliss.jpg") != 0) {
+		return 5;
+	}
 	else {
+		/* Lighting warm-up */
+		meshSaveFile(&bliss, "box.txt");
+		meshSaveFile(&sphere, "sphere.txt");
+
 		/* Continue configuring scene. */
 		sha.unifDim = 3 + 1 + 3 + 16;
 		sha.attrDim = 3 + 2 + 3;
