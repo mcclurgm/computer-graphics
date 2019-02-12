@@ -58,7 +58,6 @@ void colorPixel(int unifDim, const double unif[], int texNum,
 	double z = vary[mainVARYWORLDZ] / vary[mainVARYW];
 	double frac = (z - unif[mainUNIFMIN])
 		/ (unif[mainUNIFMAX] - unif[mainUNIFMIN]);
-	printf("frac %f\n", vary[mainVARYWORLDZ]);
 	rgbd[0] = unif[mainUNIFR] * (frac + 1.0) / 2.0;
 	rgbd[1] = unif[mainUNIFG] * (frac + 1.0) / 2.0;
 	rgbd[2] = unif[mainUNIFB] * (frac + 1.0) / 2.0;
