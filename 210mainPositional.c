@@ -36,6 +36,7 @@
 #define mainVARYO 7
 #define mainVARYP 8
 #define mainVARYWORLDZ 9
+#define mainVARYPFRAG 10
 #define mainUNIFR 0
 #define mainUNIFG 1
 #define mainUNIFB 2
@@ -44,9 +45,9 @@
 #define mainUNIFMEAN 5
 #define mainUNIFMAX 6
 #define mainUNIFCAMERA 7
-#define mainUNIFDLIGHT 23
+#define mainUNIFPLIGHT 23
 #define mainUNIFCLIGHT 26
-#define mainUNIFDCAMERA 29
+#define mainUNIFPCAMERA 29
 #define mainTEXR 0
 #define mainTEXG 1
 #define mainTEXB 2
@@ -63,18 +64,21 @@ void colorPixel(int unifDim, const double unif[], int texNum,
 	double t = vary[mainVARYT] / vary[mainVARYW];
 	texSample(tex[0], s, t, sample);
 
+    // Find dLight, dCamera
+    double dLight[3], dCam[3];
+    vecSubtract(3, &unif[mainUNIFPLIGHT], &vary[mainVARYPFRAG], dLight);
+    vecUnit(3, dLight, dLight);
+    vecSubtract(3, &unif[mainUNIFPCAMERA], &vary[mainVARYPFRAG], dCam);
+    vecUnit(3, dCam, dCam);
+
 	// Diffuse reflection initial math
-	double normal[3], dLight[3], diffuse[3];
+	double normal[3], diffuse[3];
 	vecCopy(3, &vary[mainVARYN], normal);
-	vecCopy(3, &unif[mainUNIFDLIGHT], dLight);
 	vecUnit(3, normal, normal);
-	vecUnit(3, dLight, dLight);
 	double iDiff = vecDot(3, dLight, normal);
 
 	// Specular reflection initial math
-	double iSpec, scaledDNormal[3], dRefl[3], dCam[3], specular[3];
-	vecCopy(3, &unif[mainUNIFDCAMERA], dCam);
-	vecUnit(3, dCam, dCam);
+	double iSpec, scaledDNormal[3], dRefl[3], specular[3];
 	vecScale(3, 2 * iDiff, normal, scaledDNormal);
 	vecSubtract(3, scaledDNormal, dLight, dRefl);
 	iSpec = pow(vecDot(3, dRefl, dCam), 10);
@@ -129,6 +133,9 @@ void transformVertex(int unifDim, const double unif[], int attrDim,
 	vary[mainVARYO] = varyHom[1];
 	vary[mainVARYP] = varyHom[2];
 	vary[mainVARYWORLDZ] = worldHom[2];
+    vary[mainVARYPFRAG] = worldHom[0];
+    vary[mainVARYPFRAG + 1] = worldHom[1];
+    vary[mainVARYPFRAG + 2] = worldHom[2];
 }
 
 /*** Globals ***/
@@ -159,7 +166,7 @@ double unifGrass[3 + 1 + 3 + 16 + 3 + 3 + 3] = {
 	0.0, 1.0, 0.0, 0.0,
 	0.0, 0.0, 1.0, 0.0,
 	0.0, 0.0, 0.0, 1.0,
-  	1.0, 1.0, 1.0,
+  	100.0, 100.0, 100.0,
 	1.0, 1.0, 1.0,
 	1.0, 1.0, 1.0};
 meshMesh rock;
@@ -171,7 +178,7 @@ double unifRock[3 + 1 + 3 + 16 + 3 + 3 + 3] = {
 	0.0, 1.0, 0.0, 0.0,
 	0.0, 0.0, 1.0, 0.0,
 	0.0, 0.0, 0.0, 1.0,
-	1.0, 1.0, 1.0,
+	100.0, 100.0, 100.0,
 	1.0, 1.0, 1.0,
 	1.0, 1.0, 1.0};
 meshMesh water;
@@ -183,7 +190,7 @@ double unifWater[3 + 1 + 3 + 16 + 3 + 3 + 3] = {
 	0.0, 1.0, 0.0, 0.0,
 	0.0, 0.0, 1.0, 0.0,
 	0.0, 0.0, 0.0, 1.0,
-	1.0, 1.0, 1.0,
+	100.0, 100.0, 100.0,
 	1.0, 1.0, 1.0,
 	1.0, 1.0, 1.0};
 
@@ -204,9 +211,9 @@ void render(void) {
 
     double zVec[3] = {0, 0, 1}, dCam[3];
     isoRotateVector(&(cam.isometry), zVec, dCam);
-    vecCopy(3, dCam, &unifGrass[mainUNIFDCAMERA]);
-    vecCopy(3, dCam, &unifWater[mainUNIFDCAMERA]);
-    vecCopy(3, dCam, &unifRock[mainUNIFDCAMERA]);
+    vecCopy(3, dCam, &unifGrass[mainUNIFPCAMERA]);
+    vecCopy(3, dCam, &unifWater[mainUNIFPCAMERA]);
+    vecCopy(3, dCam, &unifRock[mainUNIFPCAMERA]);
 }
 
 void handleKeyAny(int key, int shiftIsDown, int controlIsDown,
@@ -239,6 +246,13 @@ void handleKeyAny(int key, int shiftIsDown, int controlIsDown,
 		unifWater[mainUNIFMODELING] -= 0.1;
 	else if (key == GLFW_KEY_U)
 		unifWater[mainUNIFMODELING] += 0.1;
+	else if (key == GLFW_KEY_B) {
+		camSetProjectionType(&cam, camPERSPECTIVE);
+		printf("Perspective!\n");
+	} else if (key == GLFW_KEY_N) {
+		camSetProjectionType(&cam, camORTHOGRAPHIC);
+		printf("Orthographic!\n");
+	}
 	camSetFrustum(&cam, M_PI / 6.0, cameraRho, 10.0, mainSCREENSIZE,
 		mainSCREENSIZE);
 	camLookAt(&cam, cameraTarget, cameraRho, cameraPhi, cameraTheta);
@@ -304,14 +318,14 @@ int main(void) {
 		/* Continue configuring scene. */
 		sha.unifDim = 3 + 1 + 3 + 16 + 3 + 3 + 3;
 		sha.attrDim = 3 + 2 + 3;
-		sha.varyDim = 4 + 2 + 3;
+		sha.varyDim = 4 + 2 + 3 + 3;
 		sha.colorPixel = colorPixel;
 		sha.transformVertex = transformVertex;
 		sha.texNum = 0;
 		texSetFiltering(&texture, texNEAREST);
 		texSetLeftRight(&texture, texREPEAT);
 		texSetTopBottom(&texture, texREPEAT);
-		camSetProjectionType(&cam, camORTHOGRAPHIC);
+		camSetProjectionType(&cam, camPERSPECTIVE);
 		camSetFrustum(&cam, M_PI / 6.0, cameraRho, 10.0, mainSCREENSIZE,
 			mainSCREENSIZE);
 		vec3Set(landNum / 2.0, landNum / 2.0,
