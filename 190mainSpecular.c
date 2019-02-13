@@ -72,12 +72,12 @@ void colorPixel(int unifDim, const double unif[], int texNum,
 	double iDiff = vecDot(3, dLight, normal);
 
 	// Specular reflection initial math
-	double iSpec, dRefl[3], dCam[3], specular[3];
+	double iSpec, scaledDNormal[3], dRefl[3], dCam[3], specular[3];
 	vecCopy(3, &unif[mainUNIFDCAMERA], dCam);
 	vecUnit(3, dCam, dCam);
-	vecScale(3, 2 * iDiff, normal, dRefl);
-	vecSubtract(3, dRefl, dLight, dRefl);
-	iSpec = pow(vecDot(3, dRefl, dCam), 1);
+	vecScale(3, 2 * iDiff, normal, scaledDNormal);
+	vecSubtract(3, scaledDNormal, dLight, dRefl);
+	iSpec = pow(vecDot(3, dRefl, dCam), 10);
 	if(iSpec < 0)
 		iSpec = 0;
 
@@ -92,9 +92,9 @@ void colorPixel(int unifDim, const double unif[], int texNum,
 	diffuse[1] = iDiff * sample[1] * unif[mainUNIFCLIGHT + 1];
 	diffuse[2] = iDiff * sample[2] * unif[mainUNIFCLIGHT + 2];
 
-	specular[0] = iSpec * 1.0 * unif[mainUNIFCLIGHT];
-	specular[1] = iSpec * 1.0 * unif[mainUNIFCLIGHT + 1];
-	specular[2] = iSpec * 1.0 * unif[mainUNIFCLIGHT + 2];
+	specular[0] = iSpec * 0.5 * unif[mainUNIFCLIGHT];
+	specular[1] = iSpec * 0.5 * unif[mainUNIFCLIGHT + 1];
+	specular[2] = iSpec * 0.5 * unif[mainUNIFCLIGHT + 2];
 
 	vecAdd(3, diffuse, specular, rgbd);
 	rgbd[3] = vary[mainVARYZ];
@@ -193,6 +193,12 @@ void render(void) {
 	meshRender(&rock, &buf, view, &sha, unifRock, rocks);
 	vecCopy(16, (double *)projInvIsom, &unifWater[mainUNIFCAMERA]);
 	meshRender(&water, &buf, view, &sha, unifWater, waters);
+
+    double zVec[3] = {0, 0, 1}, dCam[3];
+    isoRotateVector(&(cam.isometry), zVec, dCam);
+    vecCopy(3, dCam, &unifGrass[mainUNIFDCAMERA]);
+    vecCopy(3, dCam, &unifWater[mainUNIFDCAMERA]);
+    vecCopy(3, dCam, &unifRock[mainUNIFDCAMERA]);
 }
 
 void handleKeyAny(int key, int shiftIsDown, int controlIsDown,
