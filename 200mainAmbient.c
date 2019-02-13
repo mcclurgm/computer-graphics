@@ -96,7 +96,15 @@ void colorPixel(int unifDim, const double unif[], int texNum,
 	specular[1] = iSpec * 0.5 * unif[mainUNIFCLIGHT + 1];
 	specular[2] = iSpec * 0.5 * unif[mainUNIFCLIGHT + 2];
 
-	vecAdd(3, diffuse, specular, rgbd);
+    // Ambient lighting: complete math
+    double cAmbient[3] = {0.1, 0.1, 0.1}, ambient[3];
+    ambient[0] = cAmbient[0] * sample[0];
+    ambient[1] = cAmbient[1] * sample[1];
+    ambient[2] = cAmbient[2] * sample[2];
+
+    double specPlusDiff[3];
+	vecAdd(3, diffuse, specular, specPlusDiff);
+    vecAdd(3, specPlusDiff, ambient, rgbd);
 	rgbd[3] = vary[mainVARYZ];
 }
 
