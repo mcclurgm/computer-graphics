@@ -35,6 +35,7 @@ camCamera cam;
 #define UNIFVIEWING 0
 #define UNIFMODELING 1
 #define UNIFDLIGHT 2
+#define UNIFCLIGHT 3
 #define ATTRPOSITION 0
 #define ATTRCOLOR 1
 
@@ -99,6 +100,7 @@ int initializeShaderProgram(void) {
 	// dNormal is the same as position (but we have to normalize it)
 	GLchar fragmentCode[] = ""
 	    "uniform vec3 dLight;"
+	    "uniform vec3 cLight;"
  	    "varying vec3 normal;"
 		"varying vec4 rgba;"
 		"void main() {"
@@ -107,17 +109,18 @@ int initializeShaderProgram(void) {
 		"   if (iDiff < 0.0)"
 	    "       iDiff = 0.0;"
 		""
-		"   vec4 cLight = vec4(1.0, 1.0, 1.0, 1.0);"
+		"   vec4 cLight = vec4(cLight, 1.0);"
 		"   vec4 diffuse = iDiff * rgba * cLight;"
 		"	gl_FragColor = diffuse;"
 		"}";
-
-	const GLchar *uniformNames[3] = {"viewing", "modeling", "dLight"};
+    
+    const int unifNum = 4;
+	const GLchar *uniformNames[unifNum] = {"viewing", "modeling", "dLight", "cLight"};
 	const GLchar **unifNames = uniformNames;
 	const GLchar *attributeNames[2] = {"position", "color"};
 	const GLchar **attrNames = attributeNames;
 
-	return(shaInitialize(&sha, vertexCode, fragmentCode, 3, unifNames, 2, attrNames));
+	return(shaInitialize(&sha, vertexCode, fragmentCode, unifNum, unifNames, 2, attrNames));
 }
 
 /* We want to pass 4x4 matrices into uniforms in OpenGL shaders, but there are
@@ -165,6 +168,9 @@ void render(double oldTime, double newTime) {
 	/* Create dLight uniform */
 	GLdouble dLight[3] = {1.0, 1.0, 1.0};
 	uniformVector3(dLight, sha.unifLocs[UNIFDLIGHT]);
+	/* Create cLight uniform */
+	GLdouble cLight[3] = {1.0, 1.0, 1.0};
+	uniformVector3(cLight, sha.unifLocs[UNIFCLIGHT]);
 
     /* Create attribute arrays and bind to buffers */
 	glEnableVertexAttribArray(sha.attrLocs[ATTRPOSITION]);
