@@ -36,6 +36,7 @@ camCamera cam;
 #define UNIFMODELING 1
 #define UNIFDLIGHT 2
 #define UNIFCLIGHT 3
+#define UNIFCAMBIENT 4
 #define ATTRPOSITION 0
 #define ATTRCOLOR 1
 
@@ -101,6 +102,7 @@ int initializeShaderProgram(void) {
 	GLchar fragmentCode[] = ""
 	    "uniform vec3 dLight;"
 	    "uniform vec3 cLight;"
+	    "uniform vec3 cAmbient;"
  	    "varying vec3 normal;"
 		"varying vec4 rgba;"
 		"void main() {"
@@ -109,13 +111,15 @@ int initializeShaderProgram(void) {
 		"   if (iDiff < 0.0)"
 	    "       iDiff = 0.0;"
 		""
-		"   vec4 cLight = vec4(cLight, 1.0);"
+		"   vec4 cLight = vec4(cLight, 1.0);" // expects RGBA, we give it RGB to keep this easy
 		"   vec4 diffuse = iDiff * rgba * cLight;"
-		"	gl_FragColor = diffuse;"
+		""
+		"   vec4 ambient = rgba * vec4(cAmbient, 1.0);"
+		"	gl_FragColor = diffuse + ambient;"
 		"}";
     
-    const int unifNum = 4;
-	const GLchar *uniformNames[unifNum] = {"viewing", "modeling", "dLight", "cLight"};
+    const int unifNum = 5;
+	const GLchar *uniformNames[unifNum] = {"viewing", "modeling", "dLight", "cLight", "cAmbient"};
 	const GLchar **unifNames = uniformNames;
 	const GLchar *attributeNames[2] = {"position", "color"};
 	const GLchar **attrNames = attributeNames;
@@ -171,6 +175,9 @@ void render(double oldTime, double newTime) {
 	/* Create cLight uniform */
 	GLdouble cLight[3] = {1.0, 1.0, 1.0};
 	uniformVector3(cLight, sha.unifLocs[UNIFCLIGHT]);
+	/* Create cAmbient uniform */
+	GLdouble cAmbient[3] = {0.1, 0.1, 0.1};
+	uniformVector3(cAmbient, sha.unifLocs[UNIFCAMBIENT]);
 
     /* Create attribute arrays and bind to buffers */
 	glEnableVertexAttribArray(sha.attrLocs[ATTRPOSITION]);
