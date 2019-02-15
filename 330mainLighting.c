@@ -37,6 +37,7 @@ camCamera cam;
 #define UNIFDLIGHT 2
 #define UNIFCLIGHT 3
 #define UNIFCAMBIENT 4
+#define UNIFPCAMERA 5
 #define ATTRPOSITION 0
 #define ATTRCOLOR 1
 
@@ -92,34 +93,54 @@ int initializeShaderProgram(void) {
 		attribute vec3 color;\
 		varying vec4 rgba;\
 		varying vec3 normal;\
+		varying vec3 pFragment;\
 		void main() {\
-			gl_Position = viewing * modeling * vec4(position, 1.0);\
+			vec4 world = modeling * vec4(position, 1.0);\
+			pFragment = vec3(world);\
+			gl_Position = viewing * world;\
 			rgba = vec4(color, 1.0);\
-			normal = vec3(position);\
+			normal = vec3(world);\
 		}";
-	// Need dLight, dNormal, cLight, cDiff
+	// Diffuse: need dLight, dNormal, cLight, cDiff
 	// dNormal is the same as position (but we have to normalize it)
+	// Ambient: need cAmbient
+	// Specular: cSpec, pCam,
 	GLchar fragmentCode[] = ""
-	    "uniform vec3 dLight;"
+	    "uniform vec3 dLight;" // Must be normalized (unit)
 	    "uniform vec3 cLight;"
 	    "uniform vec3 cAmbient;"
+		"uniform vec3 pCam;"
  	    "varying vec3 normal;"
+		"varying vec3 pFragment;"
 		"varying vec4 rgba;"
 		"void main() {"
-		"   vec3 dNormal = normalize(normal);"
+		"   vec3 dNormal = normalize(normal);" // diffuse
 		"   float iDiff = dot(dLight, dNormal);"
-		"   if (iDiff < 0.0)"
-	    "       iDiff = 0.0;"
-		""
 		"   vec4 cLight = vec4(cLight, 1.0);" // expects RGBA, we give it RGB to keep this easy
+		""
+		"	vec3 dRefl = (2.0 * iDiff * dNormal) - dLight;"
+		"	vec3 dCam = normalize(pCam - pFragment);" // calculate dCam
+		"	float iSpec = dot(dRefl, dCam);"
+		"	if (iSpec < 0.0)"
+		"		iSpec = 0.0;"
+		""
+		"   if (iDiff < 0.0) {"
+	    "       iDiff = 0.0;"
+		"		iSpec = 0.0;"
+		"	}"
+        ""
 		"   vec4 diffuse = iDiff * rgba * cLight;"
 		""
+		"	vec4 cSpec = vec4(0.5, 0.5, 0.5, 1.0);"
+		"	iSpec = pow(iSpec, 100.0);"
+		"	vec4 specular = iSpec * cSpec * cLight;"
+		""
 		"   vec4 ambient = rgba * vec4(cAmbient, 1.0);"
-		"	gl_FragColor = diffuse + ambient;"
+		"	gl_FragColor = diffuse + ambient + specular;"
 		"}";
-    
-    const int unifNum = 5;
-	const GLchar *uniformNames[unifNum] = {"viewing", "modeling", "dLight", "cLight", "cAmbient"};
+
+    const int unifNum = 6;
+	const GLchar *uniformNames[unifNum] = {"viewing", "modeling", "dLight", "cLight", "cAmbient", "pCam"};
 	const GLchar **unifNames = uniformNames;
 	const GLchar *attributeNames[2] = {"position", "color"};
 	const GLchar **attrNames = attributeNames;
@@ -151,7 +172,7 @@ void uniformVector3(GLdouble v[3], GLint uniformLocation) {
 void render(double oldTime, double newTime) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(sha.program);
-	
+
 	/* Send our own modeling transformation M to the shaders. */
 	GLdouble trans[3] = {0.0, 0.0, 0.0};
 	isoSetTranslation(&modeling, trans);
@@ -168,9 +189,10 @@ void render(double oldTime, double newTime) {
 	GLdouble viewing[4][4];
 	camGetProjectionInverseIsometry(&cam, viewing);
 	uniformMatrix44(viewing, sha.unifLocs[UNIFVIEWING]);
-	
+
 	/* Create dLight uniform */
-	GLdouble dLight[3] = {1.0, 1.0, 1.0};
+	GLdouble dLight[3] = {-1.0, -1.0, 1.0};
+	vecUnit(3, dLight, dLight);
 	uniformVector3(dLight, sha.unifLocs[UNIFDLIGHT]);
 	/* Create cLight uniform */
 	GLdouble cLight[3] = {1.0, 1.0, 1.0};
@@ -178,6 +200,8 @@ void render(double oldTime, double newTime) {
 	/* Create cAmbient uniform */
 	GLdouble cAmbient[3] = {0.1, 0.1, 0.1};
 	uniformVector3(cAmbient, sha.unifLocs[UNIFCAMBIENT]);
+	/* Create pCam uniform */
+	uniformVector3(cam.isometry.translation, sha.unifLocs[UNIFPCAMERA]);
 
     /* Create attribute arrays and bind to buffers */
 	glEnableVertexAttribArray(sha.attrLocs[ATTRPOSITION]);
