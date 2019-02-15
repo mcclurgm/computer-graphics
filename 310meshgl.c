@@ -1,4 +1,4 @@
-
+/* Michael McClurg, Vermilion Villarreal */
 
 
 #define meshglBUFFEROFFSET(bytes) ((GLubyte*) NULL + (bytes))

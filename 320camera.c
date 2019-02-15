@@ -10,7 +10,7 @@ projection. */
 typedef struct camCamera camCamera;
 struct camCamera {
 	isoIsometry isometry;
-	double projection[6];
+	GLdouble projection[6];
 	int projectionType;
 };
 
@@ -24,10 +24,10 @@ displaced from that target by a distance rho, in the direction specified by the
 spherical coordinates phi and theta (as in vec3Spherical). Under normal use,
 where 0 < phi < pi, the camera's up-direction is world-up, or as close to it as
 possible. */
-void camLookAt(camCamera *cam, const double target[3], double rho, double phi,
-		double theta) {
-	double z[3], y[3], yStd[3] = {0.0, 1.0, 0.0}, zStd[3] = {0.0, 0.0, 1.0};
-	double rot[3][3], trans[3];
+void camLookAt(camCamera *cam, const GLdouble target[3], GLdouble rho, GLdouble phi,
+		GLdouble theta) {
+	GLdouble z[3], y[3], yStd[3] = {0.0, 1.0, 0.0}, zStd[3] = {0.0, 0.0, 1.0};
+	GLdouble rot[3][3], trans[3];
 	vec3Spherical(1.0, phi, theta, z);
 	vec3Spherical(1.0, M_PI / 2.0 - phi, theta + M_PI, y);
 	mat33BasisRotation(yStd, zStd, y, z, rot);
@@ -42,10 +42,10 @@ The camera is positioned at the world coordinates position. From that position,
 the camera's sight direction is described by the spherical coordinates phi and
 theta (as in vec3Spherical). Under normal use, where 0 < phi < pi, the camera's
 up-direction is world-up, or as close to it as possible. */
-void camLookFrom(camCamera *cam, const double position[3], double phi,
-		double theta) {
-	double negZ[3], y[3],  yStd[3] = {0.0, 1.0, 0.0};
-	double negZStd[3] = {0.0, 0.0, -1.0}, rot[3][3];
+void camLookFrom(camCamera *cam, const GLdouble position[3], GLdouble phi,
+		GLdouble theta) {
+	GLdouble negZ[3], y[3],  yStd[3] = {0.0, 1.0, 0.0};
+	GLdouble negZStd[3] = {0.0, 0.0, -1.0}, rot[3][3];
 	vec3Spherical(1.0, phi, theta, negZ);
 	vec3Spherical(1.0, M_PI / 2.0 - phi, theta + M_PI, y);
 	mat33BasisRotation(yStd, negZStd, y, negZ, rot);
@@ -72,12 +72,12 @@ void camSetProjectionType(camCamera *cam, int projType) {
 }
 
 /* Sets all six projection parameters. */
-void camSetProjection(camCamera *cam, const double proj[6]) {
+void camSetProjection(camCamera *cam, const GLdouble proj[6]) {
 	vecCopy(6, proj, cam->projection);
 }
 
 /* Sets one of the six projection parameters. */
-void camSetOneProjection(camCamera *cam, int i, double value) {
+void camSetOneProjection(camCamera *cam, int i, GLdouble value) {
 	cam->projection[i] = value;
 }
 
@@ -87,13 +87,13 @@ the box is the rectangle R = [left, right] x [bottom, top], and on the far
 plane the box is the same rectangle R. Keep in mind that 0 > near > far. Maps
 the viewing volume to [-1, 1] x [-1, 1] x [-1, 1], with far going to 1 and near
 going to -1. */
-void camGetOrthographic(const camCamera *cam, double proj[4][4]) {
-	double left = cam->projection[camPROJL];
-	double right = cam->projection[camPROJR];
-	double bottom = cam->projection[camPROJB];
-	double top = cam->projection[camPROJT];
-	double far = cam->projection[camPROJF];
-	double near = cam->projection[camPROJN];
+void camGetOrthographic(const camCamera *cam, GLdouble proj[4][4]) {
+	GLdouble left = cam->projection[camPROJL];
+	GLdouble right = cam->projection[camPROJR];
+	GLdouble bottom = cam->projection[camPROJB];
+	GLdouble top = cam->projection[camPROJT];
+	GLdouble far = cam->projection[camPROJF];
+	GLdouble near = cam->projection[camPROJN];
   	mat44Zero(proj);
 
   	proj[0][0] = 2 / (right - left);
@@ -106,13 +106,13 @@ void camGetOrthographic(const camCamera *cam, double proj[4][4]) {
 }
 
 /* Inverse to the matrix produced by camGetOrthographic. */
-void camGetInverseOrthographic(const camCamera *cam, double proj[4][4]) {
-	double left = cam->projection[camPROJL];
-	double right = cam->projection[camPROJR];
-	double bottom = cam->projection[camPROJB];
-	double top = cam->projection[camPROJT];
-	double far = cam->projection[camPROJF];
-	double near = cam->projection[camPROJN];
+void camGetInverseOrthographic(const camCamera *cam, GLdouble proj[4][4]) {
+	GLdouble left = cam->projection[camPROJL];
+	GLdouble right = cam->projection[camPROJR];
+	GLdouble bottom = cam->projection[camPROJB];
+	GLdouble top = cam->projection[camPROJT];
+	GLdouble far = cam->projection[camPROJF];
+	GLdouble near = cam->projection[camPROJN];
 	mat44Zero(proj);
 
 	proj[0][0] = (right - left) / 2.0;
@@ -130,13 +130,13 @@ plane, the frustum is the rectangle R = [left, right] x [bottom, top]. On the
 far plane, the frustum is the rectangle (far / near) * R. Maps the viewing
 volume to [-1, 1] x [-1, 1] x [-1, 1], with far going to 1 and near going to
 -1. */
-void camGetPerspective(const camCamera *cam, double proj[4][4]) {
-	double left = cam->projection[camPROJL];
-	double right = cam->projection[camPROJR];
-	double bottom = cam->projection[camPROJB];
-	double top = cam->projection[camPROJT];
-	double far = cam->projection[camPROJF];
-	double near = cam->projection[camPROJN];
+void camGetPerspective(const camCamera *cam, GLdouble proj[4][4]) {
+	GLdouble left = cam->projection[camPROJL];
+	GLdouble right = cam->projection[camPROJR];
+	GLdouble bottom = cam->projection[camPROJB];
+	GLdouble top = cam->projection[camPROJT];
+	GLdouble far = cam->projection[camPROJF];
+	GLdouble near = cam->projection[camPROJN];
 	mat44Zero(proj);
 
 	proj[0][0] = (-2 * near) / (right - left);
@@ -149,13 +149,13 @@ void camGetPerspective(const camCamera *cam, double proj[4][4]) {
 }
 
 /* Inverse to the matrix produced by camGetPerspective. */
-void camGetInversePerspective(const camCamera *cam, double proj[4][4]) {
-	double left = cam->projection[camPROJL];
-	double right = cam->projection[camPROJR];
-	double bottom = cam->projection[camPROJB];
-	double top = cam->projection[camPROJT];
-	double far = cam->projection[camPROJF];
-	double near = cam->projection[camPROJN];
+void camGetInversePerspective(const camCamera *cam, GLdouble proj[4][4]) {
+	GLdouble left = cam->projection[camPROJL];
+	GLdouble right = cam->projection[camPROJR];
+	GLdouble bottom = cam->projection[camPROJB];
+	GLdouble top = cam->projection[camPROJT];
+	GLdouble far = cam->projection[camPROJF];
+	GLdouble near = cam->projection[camPROJN];
 	mat44Zero(proj);
 	
 	proj[0][0] = (right - left) / (-2 * near);
@@ -183,8 +183,8 @@ rendered. For orthographic projection, the projection parameters are set to
 produce the orthographic projection that, at the focal plane, is most similar
 to the perspective projection just described. You must re-invoke this function
 after each time you change the viewport or projection type. */
-void camSetFrustum(camCamera *cam, double fovy, double focal, double ratio,
-		double width, double height) {
+void camSetFrustum(camCamera *cam, GLdouble fovy, GLdouble focal, GLdouble ratio,
+		GLdouble width, GLdouble height) {
 	cam->projection[camPROJF] = -focal * ratio;
 	cam->projection[camPROJN] = -focal / ratio;
 	if (cam->projectionType == camPERSPECTIVE)
@@ -199,8 +199,8 @@ void camSetFrustum(camCamera *cam, double fovy, double focal, double ratio,
 
 /* Returns the homogeneous 4x4 product of the camera's projection and the
 camera's inverse isometry. */
-void camGetProjectionInverseIsometry(camCamera *cam, double homog[4][4]) {
-  	double projection[4][4], inverseIso[4][4];
+void camGetProjectionInverseIsometry(camCamera *cam, GLdouble homog[4][4]) {
+  	GLdouble projection[4][4], inverseIso[4][4];
 	if (cam->projectionType == camPERSPECTIVE)
 		camGetPerspective(cam, projection);
 	else
