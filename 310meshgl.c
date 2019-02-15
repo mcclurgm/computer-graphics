@@ -3,7 +3,7 @@
 
 #define meshglBUFFEROFFSET(bytes) ((GLubyte*) NULL + (bytes))
 
-/* Feel free to read from this struct's members, but don't write to them except 
+/* Feel free to read from this struct's members, but don't write to them except
 through the accessor functions. */
 typedef struct meshglMesh meshglMesh;
 struct meshglMesh {
@@ -11,16 +11,16 @@ struct meshglMesh {
 	GLuint buffers[2];
 };
 
-/* Initializes the mesh from a non-OpenGL base mesh. After this function 
-completes, the base mesh can be destroyed (because its data have been copied 
-into GPU memory). When you are done using the mesh, don't forget to deallocate 
+/* Initializes the mesh from a non-OpenGL base mesh. After this function
+completes, the base mesh can be destroyed (because its data have been copied
+into GPU memory). When you are done using the mesh, don't forget to deallocate
 its resources using meshglDestroy. */
 void meshglInitialize(meshglMesh *mesh, meshMesh *base) {
     // Initialize count properties of the OpenGL mesh
     mesh->triNum = base->triNum;
     mesh->vertNum = base->vertNum;
     mesh->attrDim = base->attrDim;
-    
+
 	glGenBuffers(2, mesh->buffers);
 	glBindBuffer(GL_ARRAY_BUFFER, mesh->buffers[0]);
 	glBufferData(GL_ARRAY_BUFFER, mesh->vertNum * mesh->attrDim * sizeof(GLdouble),
@@ -28,33 +28,24 @@ void meshglInitialize(meshglMesh *mesh, meshMesh *base) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->buffers[1]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->triNum * 3 * sizeof(GLuint),
 		(GLvoid *)base->tri, GL_STATIC_DRAW);
-		
-	meshDestroy(base);
-	
-	GLdouble thing[8];
-	printf("tri %i vert %i attr %i\n", mesh->triNum, mesh->vertNum, mesh->attrDim);
-	glGetBufferSubData(mesh->buffers[0], mesh->attrDim * sizeof(GLdouble), mesh->attrDim * sizeof(GLdouble), &thing);
-	printf("%f %f %f %f %f %f %f %f\n", thing[0], thing[1], thing[2], thing[3], thing[4], thing[5], thing[6], thing[7]);
 }
 
-/* Renders the mesh. Immediately before calling this function, you must 
+/* Renders the mesh. Immediately before calling this function, you must
 'pre-render' with custom code to set up the attributes, such as
 	glBindBuffer(GL_ARRAY_BUFFER, mesh->buffers[0]);
-	glVertexPointer(3, GL_DOUBLE, mesh->attrDim * sizeof(GLdouble), 
+	glVertexPointer(3, GL_DOUBLE, mesh->attrDim * sizeof(GLdouble),
 		meshglBUFFEROFFSET(0));
-	glNormalPointer(GL_DOUBLE, mesh->attrDim * sizeof(GLdouble), 
+	glNormalPointer(GL_DOUBLE, mesh->attrDim * sizeof(GLdouble),
 		meshglBUFFEROFFSET(0));
-	glColorPointer(3, GL_DOUBLE, mesh->attrDim * sizeof(GLdouble), 
+	glColorPointer(3, GL_DOUBLE, mesh->attrDim * sizeof(GLdouble),
 		meshglBUFFEROFFSET(3 * sizeof(GLdouble))); */
 void meshglRender(meshglMesh *mesh) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->buffers[1]);
     glDrawElements(GL_TRIANGLES, mesh->triNum * 3, GL_UNSIGNED_INT, meshglBUFFEROFFSET(0));
 }
 
-/* Releases the resources backing the mesh. Invoke this function when you are 
+/* Releases the resources backing the mesh. Invoke this function when you are
 done using the mesh. */
 void meshglDestroy(meshglMesh *mesh) {
 	glDeleteBuffers(2, mesh->buffers);
 }
-
-
