@@ -18,6 +18,8 @@
 #include "320matrix.c"
 #include "320isometry.c"
 #include "320camera.c"
+#include "310mesh.c"
+#include "350meshgl.c"
 
 #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes))
 
@@ -32,6 +34,8 @@ GLuint vao;
 /* These are new. */
 isoIsometry modeling;
 camCamera cam;
+
+meshglMesh glCapsule;
 
 #define UNIFVIEWING 0
 #define UNIFMODELING 1
@@ -58,36 +62,15 @@ void handleResize(GLFWwindow *window, int width, int height) {
 	camSetFrustum(&cam, M_PI / 6.0, 5.0, 10.0, width, height);
 }
 
-void initializeMesh(void) {
-	GLdouble attributes[VERTNUM * ATTRDIM] = {
-		1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-		-1.0, 0.0, 0.0, 1.0, 1.0, 0.0,
-		0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
-		0.0, -1.0, 0.0, 0.0, 1.0, 1.0,
-		0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-		0.0, 0.0, -1.0, 1.0, 0.0, 1.0};
-	GLuint triangles[TRINUM * 3] = {
-		0, 2, 4,
-		2, 1, 4,
-		1, 3, 4,
-		3, 0, 4,
-		2, 0, 5,
-		1, 2, 5,
-		3, 1, 5,
-		0, 3, 5};
-	glGenBuffers(2, buffers);
-	glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-	glBufferData(GL_ARRAY_BUFFER, VERTNUM * ATTRDIM * sizeof(GLdouble),
-		(GLvoid *)attributes, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, TRINUM * 3 * sizeof(GLuint),
-		(GLvoid *)triangles, GL_STATIC_DRAW);
-
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
+int initializeMesh(void) {
+	meshMesh capsule;
+	if (meshInitializeCapsule(&capsule, .5, 2, 20, 20) != 0)
+		return 3;
+	meshglInitialize(&glCapsule, &capsule);
+	meshDestroy(&capsule);
 
 	// Add attribute arrays VAO
-	glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, glCapsule.buffers[0]);
 	glEnableVertexAttribArray(sha.attrLocs[ATTRPOSITION]);
 	glVertexAttribPointer(sha.attrLocs[ATTRPOSITION], 3, GL_DOUBLE, GL_FALSE,
 		ATTRDIM * sizeof(GLdouble), BUFFER_OFFSET(0));
@@ -95,11 +78,7 @@ void initializeMesh(void) {
 	glVertexAttribPointer(sha.attrLocs[ATTRCOLOR], 3, GL_DOUBLE, GL_FALSE,
 		ATTRDIM * sizeof(GLdouble), BUFFER_OFFSET(3 * sizeof(GLdouble)));
 
-	// Add triangle indices to VAO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
-
-	// Reset the bound VAO as soon as we're done with it
-	glBindVertexArray(0);
+	meshglFinishInitialization(&glCapsule);
 }
 
 /* Returns 0 on success, non-zero on failure. */
@@ -226,10 +205,7 @@ void render(double oldTime, double newTime) {
 	/* Create pCam uniform */
 	uniformVector3(cam.isometry.translation, sha.unifLocs[UNIFPCAMERA]);
 
-	glBindVertexArray(vao);
-	glDrawElements(GL_TRIANGLES, TRINUM * 3, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
-	// Reset the bound VAO as soon as we're done with it
-	glBindVertexArray(0);
+	meshglRender(&glCapsule);
 }
 
 int main(void) {
@@ -276,7 +252,8 @@ int main(void) {
 
     if (initializeShaderProgram() != 0)
     	return 4;
-    initializeMesh();
+    if (initializeMesh() != 0)
+		return 5;
     while (glfwWindowShouldClose(window) == 0) {
         oldTime = newTime;
     	newTime = getTime();
