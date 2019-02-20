@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <sys/time.h>
+#include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 
 #include "320shading.c"
@@ -25,9 +26,9 @@ shaShading sha;
 #define TRINUM 8
 #define VERTNUM 6
 #define ATTRDIM 6
-/* The angle variable is no longer in degrees. That's a relief. */
 GLdouble angle = 0.0;
 GLuint buffers[2];
+GLuint vao;
 /* These are new. */
 isoIsometry modeling;
 camCamera cam;
@@ -81,19 +82,38 @@ void initializeMesh(void) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, TRINUM * 3 * sizeof(GLuint),
 		(GLvoid *)triangles, GL_STATIC_DRAW);
+
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	// Add attribute arrays VAO
+	glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
+	glEnableVertexAttribArray(sha.attrLocs[ATTRPOSITION]);
+	glVertexAttribPointer(sha.attrLocs[ATTRPOSITION], 3, GL_DOUBLE, GL_FALSE,
+		ATTRDIM * sizeof(GLdouble), BUFFER_OFFSET(0));
+	glEnableVertexAttribArray(sha.attrLocs[ATTRCOLOR]);
+	glVertexAttribPointer(sha.attrLocs[ATTRCOLOR], 3, GL_DOUBLE, GL_FALSE,
+		ATTRDIM * sizeof(GLdouble), BUFFER_OFFSET(3 * sizeof(GLdouble)));
+
+	// Add triangle indices to VAO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
+
+	// Reset the bound VAO as soon as we're done with it
+	glBindVertexArray(0);
 }
 
 /* Returns 0 on success, non-zero on failure. */
 int initializeShaderProgram(void) {
 	/* The two matrices will be sent to the shaders as uniforms. */
 	GLchar vertexCode[] = "\
+		#version 140\n\
 		uniform mat4 viewing;\
 		uniform mat4 modeling;\
-		attribute vec3 position;\
-		attribute vec3 color;\
-		varying vec4 rgba;\
-		varying vec3 normal;\
-		varying vec3 pFragment;\
+		in vec3 position;\
+		in vec3 color;\
+		out vec4 rgba;\
+		out vec3 normal;\
+		out vec3 pFragment;\
 		void main() {\
 			vec4 world = modeling * vec4(position, 1.0);\
 			pFragment = vec3(world);\
@@ -106,13 +126,15 @@ int initializeShaderProgram(void) {
 	// Ambient: need cAmbient
 	// Specular: cSpec, pCam,
 	GLchar fragmentCode[] = ""
+		"#version 140\n"
 	    "uniform vec3 dLight;" // Must be normalized (unit)
 	    "uniform vec3 cLight;"
 	    "uniform vec3 cAmbient;"
 		"uniform vec3 pCam;"
- 	    "varying vec3 normal;"
-		"varying vec3 pFragment;"
-		"varying vec4 rgba;"
+ 	    "in vec3 normal;"
+		"in vec3 pFragment;"
+		"in vec4 rgba;"
+		"out vec4 fragColor;"
 		"void main() {"
 		"   vec3 dNormal = normalize(normal);" // diffuse
 		"   float iDiff = dot(dLight, dNormal);"
@@ -136,7 +158,7 @@ int initializeShaderProgram(void) {
 		"	vec4 specular = iSpec * cSpec * cLight;"
 		""
 		"   vec4 ambient = rgba * vec4(cAmbient, 1.0);"
-		"	gl_FragColor = diffuse + ambient + specular;"
+		"	fragColor = diffuse + ambient + specular;"
 		"}";
 
     const int unifNum = 6;
@@ -190,6 +212,7 @@ void render(double oldTime, double newTime) {
 	camGetProjectionInverseIsometry(&cam, viewing);
 	uniformMatrix44(viewing, sha.unifLocs[UNIFVIEWING]);
 
+	/* Create lighting uniforms */
 	/* Create dLight uniform */
 	GLdouble dLight[3] = {-1.0, -1.0, 1.0};
 	vecUnit(3, dLight, dLight);
@@ -203,26 +226,27 @@ void render(double oldTime, double newTime) {
 	/* Create pCam uniform */
 	uniformVector3(cam.isometry.translation, sha.unifLocs[UNIFPCAMERA]);
 
-    /* Create attribute arrays and bind to buffers */
-	glEnableVertexAttribArray(sha.attrLocs[ATTRPOSITION]);
-	glEnableVertexAttribArray(sha.attrLocs[ATTRCOLOR]);
-	glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-	glVertexAttribPointer(sha.attrLocs[ATTRPOSITION], 3, GL_DOUBLE, GL_FALSE,
-		ATTRDIM * sizeof(GLdouble), BUFFER_OFFSET(0));
-	glVertexAttribPointer(sha.attrLocs[ATTRCOLOR], 3, GL_DOUBLE, GL_FALSE,
-		ATTRDIM * sizeof(GLdouble), BUFFER_OFFSET(3 * sizeof(GLdouble)));
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
+	glBindVertexArray(vao);
 	glDrawElements(GL_TRIANGLES, TRINUM * 3, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
-	glDisableVertexAttribArray(sha.attrLocs[ATTRPOSITION]);
-	glDisableVertexAttribArray(sha.attrLocs[ATTRCOLOR]);
+	// Reset the bound VAO as soon as we're done with it
+	glBindVertexArray(0);
 }
 
 int main(void) {
 	double oldTime;
 	double newTime = getTime();
     glfwSetErrorCallback(handleError);
-    if (glfwInit() == 0)
+    if (glfwInit() == 0) {
+    	fprintf(stderr, "main: glfwInit failed.\n");
         return 1;
+    }
+
+    /* Ask GLFW to supply an OpenGL 3.2 context. */
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
     GLFWwindow *window;
     window = glfwCreateWindow(768, 512, "Learning OpenGL 2.0", NULL, NULL);
     if (window == NULL) {
@@ -231,20 +255,28 @@ int main(void) {
     }
     glfwSetWindowSizeCallback(window, handleResize);
     glfwMakeContextCurrent(window);
+
+	if (gl3wInit() != 0) {
+    	fprintf(stderr, "main: gl3wInit failed.\n");
+    	glfwDestroyWindow(window);
+    	glfwTerminate();
+    	return 3;
+    }
+
     fprintf(stderr, "main: OpenGL %s, GLSL %s.\n",
 		glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    /* Configure the camera once and for all. */
+
 	double target[3] = {0.0, 0.0, 0.0};
 	camLookAt(&cam, target, 5.0, M_PI / 3.0, -M_PI / 4.0);
 	camSetProjectionType(&cam, camPERSPECTIVE);
 	camSetFrustum(&cam, M_PI / 6.0, 5.0, 10.0, 768, 512);
-	/* The rest of the program is identical to the preceding tutorial. */
-    initializeMesh();
+
     if (initializeShaderProgram() != 0)
-    	return 3;
+    	return 4;
+    initializeMesh();
     while (glfwWindowShouldClose(window) == 0) {
         oldTime = newTime;
     	newTime = getTime();
@@ -254,6 +286,7 @@ int main(void) {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
     shaDestroy(&sha);
 	glDeleteBuffers(2, buffers);
 	glfwDestroyWindow(window);
