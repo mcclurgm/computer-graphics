@@ -25,9 +25,6 @@
 
 shaShading sha;
 
-#define TRINUM 8
-#define VERTNUM 6
-#define ATTRDIM 6
 GLdouble angle = 0.0;
 GLuint buffers[2];
 GLuint vao;
@@ -73,10 +70,10 @@ int initializeMesh(void) {
 	glBindBuffer(GL_ARRAY_BUFFER, glCapsule.buffers[0]);
 	glEnableVertexAttribArray(sha.attrLocs[ATTRPOSITION]);
 	glVertexAttribPointer(sha.attrLocs[ATTRPOSITION], 3, GL_DOUBLE, GL_FALSE,
-		ATTRDIM * sizeof(GLdouble), BUFFER_OFFSET(0));
+		glCapsule.attrDim * sizeof(GLdouble), BUFFER_OFFSET(0));
 	glEnableVertexAttribArray(sha.attrLocs[ATTRCOLOR]);
 	glVertexAttribPointer(sha.attrLocs[ATTRCOLOR], 3, GL_DOUBLE, GL_FALSE,
-		ATTRDIM * sizeof(GLdouble), BUFFER_OFFSET(3 * sizeof(GLdouble)));
+		glCapsule.attrDim * sizeof(GLdouble), BUFFER_OFFSET(3 * sizeof(GLdouble)));
 
 	meshglFinishInitialization(&glCapsule);
 }
