@@ -1,8 +1,9 @@
-
-
+/* Michael McClurg, Vermilion Villarreal */
 
 /* On macOS, compile with...
     clang 300openGL20b.c -lglfw -framework OpenGL -Wno-deprecated
+	On Linux:
+	clang 360mainTexturing.c /usr/local/gl3w/src/gl3w.o -lGL -lglfw -lm -ldl
 */
 
 #include <stdio.h>
@@ -13,7 +14,7 @@
 #include <GLFW/glfw3.h>
 
 #include "320shading.c"
-/* Back from the dead. */
+#include "360texture.c"
 #include "310vector.c"
 #include "320matrix.c"
 #include "320isometry.c"
@@ -31,6 +32,7 @@ GLuint vao;
 /* These are new. */
 isoIsometry modeling;
 camCamera cam;
+texTexture texture0;
 
 meshglMesh glCapsule;
 
@@ -40,8 +42,10 @@ meshglMesh glCapsule;
 #define UNIFCLIGHT 3
 #define UNIFCAMBIENT 4
 #define UNIFPCAMERA 5
+#define UNIFTEXTURE 6
 #define ATTRPOSITION 0
-#define ATTRCOLOR 1
+#define ATTRST 1
+#define ATTRNORMAL 2
 
 double getTime(void) {
 	struct timeval tv;
@@ -71,11 +75,15 @@ int initializeMesh(void) {
 	glEnableVertexAttribArray(sha.attrLocs[ATTRPOSITION]);
 	glVertexAttribPointer(sha.attrLocs[ATTRPOSITION], 3, GL_DOUBLE, GL_FALSE,
 		glCapsule.attrDim * sizeof(GLdouble), BUFFER_OFFSET(0));
-	glEnableVertexAttribArray(sha.attrLocs[ATTRCOLOR]);
-	glVertexAttribPointer(sha.attrLocs[ATTRCOLOR], 3, GL_DOUBLE, GL_FALSE,
+	glEnableVertexAttribArray(sha.attrLocs[ATTRST]);
+	glVertexAttribPointer(sha.attrLocs[ATTRST], 2, GL_DOUBLE, GL_FALSE,
 		glCapsule.attrDim * sizeof(GLdouble), BUFFER_OFFSET(3 * sizeof(GLdouble)));
+	glEnableVertexAttribArray(sha.attrLocs[ATTRNORMAL]);
+	glVertexAttribPointer(sha.attrLocs[ATTRNORMAL], 3, GL_DOUBLE, GL_FALSE,
+		glCapsule.attrDim * sizeof(GLdouble), BUFFER_OFFSET(5 * sizeof(GLdouble)));
 
 	meshglFinishInitialization(&glCapsule);
+	return 0;
 }
 
 /* Returns 0 on success, non-zero on failure. */
@@ -86,16 +94,18 @@ int initializeShaderProgram(void) {
 		uniform mat4 viewing;\
 		uniform mat4 modeling;\
 		in vec3 position;\
-		in vec3 color;\
+		in vec2 texCoords;\
+		in vec3 normal;\
 		out vec4 rgba;\
-		out vec3 normal;\
+		out vec2 st;\
+		out vec3 nop;\
 		out vec3 pFragment;\
 		void main() {\
 			vec4 world = modeling * vec4(position, 1.0);\
 			pFragment = vec3(world);\
 			gl_Position = viewing * world;\
-			rgba = vec4(color, 1.0);\
-			normal = vec3(world);\
+			st = texCoords;\
+			nop = vec3(modeling * vec4(normal, 0));\
 		}";
 	// Diffuse: need dLight, dNormal, cLight, cDiff
 	// dNormal is the same as position (but we have to normalize it)
@@ -107,14 +117,17 @@ int initializeShaderProgram(void) {
 	    "uniform vec3 cLight;"
 	    "uniform vec3 cAmbient;"
 		"uniform vec3 pCam;"
- 	    "in vec3 normal;"
+		"uniform sampler2D texture0;"
+ 	    "in vec3 nop;"
+		"in vec2 st;"
 		"in vec3 pFragment;"
-		"in vec4 rgba;"
 		"out vec4 fragColor;"
 		"void main() {"
-		"   vec3 dNormal = normalize(normal);" // diffuse
+		"	vec4 rgba = vec4(vec3(texture(texture0, st)), 1.0);"
+		""
+		"   vec3 dNormal = normalize(nop);" // diffuse
 		"   float iDiff = dot(dLight, dNormal);"
-		"   vec4 cLight = vec4(cLight, 1.0);" // expects RGBA, we give it RGB to keep this easy
+		"   vec4 cLight = vec4(cLight, 1.0);"
 		""
 		"	vec3 dRefl = (2.0 * iDiff * dNormal) - dLight;"
 		"	vec3 dCam = normalize(pCam - pFragment);" // calculate dCam
@@ -134,16 +147,18 @@ int initializeShaderProgram(void) {
 		"	vec4 specular = iSpec * cSpec * cLight;"
 		""
 		"   vec4 ambient = rgba * vec4(cAmbient, 1.0);"
+		""
 		"	fragColor = diffuse + ambient + specular;"
 		"}";
 
-    const int unifNum = 6;
-	const GLchar *uniformNames[unifNum] = {"viewing", "modeling", "dLight", "cLight", "cAmbient", "pCam"};
+    const int unifNum = 7;
+	const GLchar *uniformNames[unifNum] = {"viewing", "modeling", "dLight", "cLight", "cAmbient", "pCam", "texture0"};
 	const GLchar **unifNames = uniformNames;
-	const GLchar *attributeNames[2] = {"position", "color"};
+	const int attrNum = 3;
+	const GLchar *attributeNames[attrNum] = {"position", "texCoords", "normal"};
 	const GLchar **attrNames = attributeNames;
 
-	return(shaInitialize(&sha, vertexCode, fragmentCode, unifNum, unifNames, 2, attrNames));
+	return(shaInitialize(&sha, vertexCode, fragmentCode, unifNum, unifNames, attrNum, attrNames));
 }
 
 /* We want to pass 4x4 matrices into uniforms in OpenGL shaders, but there are
@@ -202,7 +217,11 @@ void render(double oldTime, double newTime) {
 	/* Create pCam uniform */
 	uniformVector3(cam.isometry.translation, sha.unifLocs[UNIFPCAMERA]);
 
+	/* Setup texture uniform */
+	texRender(&texture0, GL_TEXTURE0, 0, sha.unifLocs[UNIFTEXTURE]);
 	meshglRender(&glCapsule);
+	/* Clean up texture */
+	texUnrender(&texture0, GL_TEXTURE0);
 }
 
 int main(void) {
@@ -247,10 +266,13 @@ int main(void) {
 	camSetProjectionType(&cam, camPERSPECTIVE);
 	camSetFrustum(&cam, M_PI / 6.0, 5.0, 10.0, 768, 512);
 
+	if (texInitializeFile(&texture0, "zuck.jpg", GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT) != 0)
+		return 4;
+
     if (initializeShaderProgram() != 0)
-    	return 4;
+    	return 5;
     if (initializeMesh() != 0)
-		return 5;
+		return 6;
     while (glfwWindowShouldClose(window) == 0) {
         oldTime = newTime;
     	newTime = getTime();
@@ -262,6 +284,7 @@ int main(void) {
     }
 
     shaDestroy(&sha);
+	texDestroy(&texture0);
 	glDeleteBuffers(2, buffers);
 	glfwDestroyWindow(window);
     glfwTerminate();
