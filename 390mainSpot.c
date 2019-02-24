@@ -52,9 +52,11 @@ meshglMesh glSphere;
 #define UNIFCLIGHT 3
 #define UNIFPSPOT 4
 #define UNIFCSPOT 5
-#define UNIFCAMBIENT 6
-#define UNIFPCAMERA 7
-#define UNIFTEXTURE 8
+#define UNIFDSPOT 6
+#define UNIFTHSPOT 7
+#define UNIFCAMBIENT 8
+#define UNIFPCAMERA 9
+#define UNIFTEXTURE 10
 #define ATTRPOSITION 0
 #define ATTRST 1
 #define ATTRNORMAL 2
@@ -180,6 +182,8 @@ int initializeShaderProgram(void) {
 	    "uniform vec3 cLight;"
 	    "uniform vec3 pSpot;" // Must be normalized (unit)
 	    "uniform vec3 cSpot;"
+		"uniform vec3 dSpot;"
+		"uniform float thSpot;"
 	    "uniform vec3 cAmbient;"
 		"uniform vec3 pCam;"
 		"uniform sampler2D texture0;"
@@ -189,59 +193,60 @@ int initializeShaderProgram(void) {
 		"out vec4 fragColor;"
 		"void main() {"
 		"	vec4 rgba = vec4(vec3(texture(texture0, st)), 1.0);"
-		""
-		/* First (directional) light source */
+		"	"
+		/* 	First (directional) light source */
 		"   vec3 dNormal = normalize(nop);" // diffuse
 		"   float iDiff = dot(dLight, dNormal);"
 		"   vec4 cLight = vec4(cLight, 1.0);"
-		""
+		"	"
 		"	vec3 dRefl = (2.0 * iDiff * dNormal) - dLight;"
 		"	vec3 dCam = normalize(pCam - pFragment);" // calculate dCam
 		"	float iSpec = dot(dRefl, dCam);"
 		"	if (iSpec < 0.0)"
 		"		iSpec = 0.0;"
-		""
+		"	"
 		"   if (iDiff < 0.0) {"
 	    "       iDiff = 0.0;"
 		"		iSpec = 0.0;"
 		"	}"
-        ""
+        "	"
 		"   vec4 diffuse = iDiff * rgba * cLight;"
-		""
+		"	"
 		"	vec4 cSpec = vec4(0.5, 0.5, 0.5, 1.0);"
 		"	iSpec = pow(iSpec, 100.0);"
 		"	vec4 specular = iSpec * cSpec * cLight;"
-		""
+		"	"
 		"   vec4 ambient = rgba * vec4(cAmbient, 1.0);"
-		""
+		"	"
 		"	fragColor = diffuse + ambient + specular;"
-		""
-		/* Light 2 (spotlight) */
-		"	vec3 dSpot = normalize(pSpot - pFragment);"
-		"   iDiff = dot(dSpot, dNormal);"
-		"   vec4 cSpot = vec4(cSpot, 1.0);"
-		""
-		"	dRefl = (2.0 * iDiff * dNormal) - dSpot;"
-		"	iSpec = dot(dRefl, dCam);"
-		"	if (iSpec < 0.0)"
-		"		iSpec = 0.0;"
-		""
-		"   if (iDiff < 0.0) {"
-	    "       iDiff = 0.0;"
-		"		iSpec = 0.0;"
+		"	"
+		/* 	Light 2 (spotlight) */
+		"	vec3 dSpotLight = normalize(pSpot - pFragment);"
+		"	if(dot(dSpotLight, dSpot) >= thSpot) {"
+		"   	iDiff = dot(dSpotLight, dNormal);"
+		"   	vec4 cSpot = vec4(cSpot, 1.0);"
+		"		"
+		"		dRefl = (2.0 * iDiff * dNormal) - dSpotLight;"
+		"		iSpec = dot(dRefl, dCam);"
+		"		if (iSpec < 0.0)"
+		"			iSpec = 0.0;"
+		"		"
+		"   	if (iDiff < 0.0) {"
+	    "       	iDiff = 0.0;"
+		"			iSpec = 0.0;"
+		"		}"
+        "	"
+		"   	diffuse = iDiff * rgba * cSpot;"
+		"		"
+		"		iSpec = pow(iSpec, 100.0);"
+		"		specular = iSpec * cSpec * cSpot;"
+		"		"
+		"		fragColor = fragColor + diffuse + ambient + specular;"
 		"	}"
-        ""
-		"   diffuse = iDiff * rgba * cSpot;"
-		""
-		"	iSpec = pow(iSpec, 100.0);"
-		"	specular = iSpec * cSpec * cSpot;"
-		""
-		"	fragColor = fragColor + diffuse + ambient + specular;"
-
 		"}";
 
-    const int unifNum = 9;
-	const GLchar *uniformNames[unifNum] = {"viewing", "modeling", "dLight", "cLight", "pSpot", "cSpot", "cAmbient", "pCam", "texture0"};
+    const int unifNum = 11;
+	const GLchar *uniformNames[unifNum] = {"viewing", "modeling", "dLight", "cLight", "pSpot", "cSpot", "dSpot", "thSpot", "cAmbient", "pCam", "texture0"};
 	const GLchar **unifNames = uniformNames;
 	const int attrNum = 3;
 	const GLchar *attributeNames[attrNum] = {"position", "texCoords", "normal"};
@@ -290,7 +295,7 @@ void render(double oldTime, double newTime) {
 	glUseProgram(sha.program);
 
 	/* Calculate capsule modeling isometry. */
-	GLdouble trans[3] = {0.0, 0.0, 0.0};
+	GLdouble trans[3] = {-1.0, 0.0, 0.0};
 	isoSetTranslation(&modeling, trans);
 	angle += 0.2 * (newTime - oldTime);
 	GLdouble axis[3] = {1.0 / sqrt(3.0), 1.0 / sqrt(3.0), 1.0 / sqrt(3.0)};
@@ -319,18 +324,26 @@ void render(double oldTime, double newTime) {
 	vecUnit(3, dLight, dLight);
 	uniformVector3(dLight, sha.unifLocs[UNIFDLIGHT]);
 	/* Create cLight uniform */
-	GLdouble cLight[3] = {1.0, 1.0, 1.0};
+	GLdouble cLight[3] = {0.1, 0.1, 0.1};
 	uniformVector3(cLight, sha.unifLocs[UNIFCLIGHT]);
+	/* Create cAmbient uniform */
+	GLdouble cAmbient[3] = {0.1, 0.1, 0.1};
+	uniformVector3(cAmbient, sha.unifLocs[UNIFCAMBIENT]);
 	/* Create pSpot uniform */
-	GLdouble pSpot[3] = {2.0, -1.0, 1.0};
+	GLdouble pSpot[3] = {0.0, 0.0, -1.0};
 	vecUnit(3, pSpot, pSpot);
 	uniformVector3(pSpot, sha.unifLocs[UNIFPSPOT]);
 	/* Create cSpot uniform */
 	GLdouble cSpot[3] = {1.0, 1.0, 1.0};
 	uniformVector3(cSpot, sha.unifLocs[UNIFCSPOT]);
-	/* Create cAmbient uniform */
-	GLdouble cAmbient[3] = {0.1, 0.1, 0.1};
-	uniformVector3(cAmbient, sha.unifLocs[UNIFCAMBIENT]);
+	/* Create dSpot uniform */
+	GLdouble dSpot[3] = {0.0, 0.0, 1.0};
+	vecUnit(3, dSpot, dSpot);
+	uniformVector3(dSpot, sha.unifLocs[UNIFDSPOT]);
+	/* Create thSpot uniform */
+	GLdouble thSpot = M_PI / 10;
+	glUniform1i(sha.unifLocs[UNIFTHSPOT], cos(thSpot / 2.0));
+
 	/* Create pCam uniform */
 	uniformVector3(cam.isometry.translation, sha.unifLocs[UNIFPCAMERA]);
 
@@ -376,7 +389,7 @@ int initializeBodies(void) {
 	GLdouble axis[3] = {0.0, 0.0, 1.0};
 	mat33AngleAxisRotation(0, axis, rot);
 	isoSetRotation(&landscapeIsom, rot);
-	GLdouble trans[3] = {-2.0, 0.0, -1.0};
+	GLdouble trans[3] = {-2.0, 0.0, -1.5};
 	isoSetTranslation(&landscapeIsom, trans);
 	bodySetIsometry(&landscapeBody, landscapeIsom);
 	bodySetMesh(&landscapeBody, &glLandscape);
