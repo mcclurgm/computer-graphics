@@ -266,7 +266,7 @@ int main(void) {
 	camSetProjectionType(&cam, camPERSPECTIVE);
 	camSetFrustum(&cam, M_PI / 6.0, 5.0, 10.0, 768, 512);
 
-	if (texInitializeFile(&texture0, "zuck.jpg", GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT) != 0)
+	if (texInitializeFile(&texture0, "bliss.jpg", GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT) != 0)
 		return 4;
 
     if (initializeShaderProgram() != 0)

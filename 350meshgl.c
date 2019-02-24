@@ -21,8 +21,6 @@ void meshglInitialize(meshglMesh *mesh, const meshMesh *base) {
     mesh->vertNum = base->vertNum;
     mesh->attrDim = base->attrDim;
 
-	printf("attrDim: %i\n", mesh->attrDim);
-
 	glGenBuffers(2, mesh->buffers);
 	glBindBuffer(GL_ARRAY_BUFFER, mesh->buffers[0]);
 	glBufferData(GL_ARRAY_BUFFER, mesh->vertNum * mesh->attrDim * sizeof(GLdouble),
