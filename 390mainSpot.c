@@ -21,28 +21,40 @@
 #include "320camera.c"
 #include "310mesh.c"
 #include "350meshgl.c"
+#include "370body.c"
 
 #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes))
 
 shaShading sha;
 
 GLdouble angle = 0.0;
+GLdouble transSphere[3] = {1.0, 1.0, 0.0};
 GLuint buffers[2];
 GLuint vao;
+GLuint vao1;
 /* These are new. */
 isoIsometry modeling;
 camCamera cam;
 texTexture texture0;
+texTexture texture1;
+texTexture textureWater;
 
+bodyBody capsuleBody;
+bodyBody landscapeBody;
+bodyBody sphereBody;
 meshglMesh glCapsule;
+meshglMesh glLandscape;
+meshglMesh glSphere;
 
 #define UNIFVIEWING 0
 #define UNIFMODELING 1
 #define UNIFDLIGHT 2
 #define UNIFCLIGHT 3
-#define UNIFCAMBIENT 4
-#define UNIFPCAMERA 5
-#define UNIFTEXTURE 6
+#define UNIFPSPOT 4
+#define UNIFCSPOT 5
+#define UNIFCAMBIENT 6
+#define UNIFPCAMERA 7
+#define UNIFTEXTURE 8
 #define ATTRPOSITION 0
 #define ATTRST 1
 #define ATTRNORMAL 2
@@ -66,7 +78,7 @@ void handleResize(GLFWwindow *window, int width, int height) {
 int initializeMesh(void) {
 	meshMesh capsule;
 	if (meshInitializeCapsule(&capsule, .5, 2, 20, 20) != 0)
-		return 3;
+		return 1;
 	meshglInitialize(&glCapsule, &capsule);
 	meshDestroy(&capsule);
 
@@ -83,6 +95,57 @@ int initializeMesh(void) {
 		glCapsule.attrDim * sizeof(GLdouble), BUFFER_OFFSET(5 * sizeof(GLdouble)));
 
 	meshglFinishInitialization(&glCapsule);
+
+	/* Setup landscape */
+	meshMesh landscape;
+	GLdouble zs[3][4] = {
+	{5.0, 4.5, 3.5, 3.0}, 
+	{3.0, 2.5, 1.5, 0.5}, 
+	{2.0, 1.5, -0.5, -1.0}};
+	// if (meshInitializeLandscape(&landscape, 3, 4, 2.0, (GLdouble *)zs) != 0)
+	if (meshInitializeBox(&landscape, -3.0, 3.0, -3.0, 3.0, -3.0, 0.0) != 0)
+		return 2;
+	
+	//Setting up glLandscape VAO and mesh
+	meshglInitialize(&glLandscape, &landscape);
+	meshDestroy(&landscape);
+
+	glBindBuffer(GL_ARRAY_BUFFER, glLandscape.buffers[0]);
+	glEnableVertexAttribArray(sha.attrLocs[ATTRPOSITION]);
+	glVertexAttribPointer(sha.attrLocs[ATTRPOSITION], 3, GL_DOUBLE, GL_FALSE,
+		glLandscape.attrDim * sizeof(GLdouble), BUFFER_OFFSET(0));
+	glEnableVertexAttribArray(sha.attrLocs[ATTRST]);
+	glVertexAttribPointer(sha.attrLocs[ATTRST], 2, GL_DOUBLE, GL_FALSE,
+		glLandscape.attrDim * sizeof(GLdouble), BUFFER_OFFSET(3 * sizeof(GLdouble)));
+	glEnableVertexAttribArray(sha.attrLocs[ATTRNORMAL]);
+	glVertexAttribPointer(sha.attrLocs[ATTRNORMAL], 3, GL_DOUBLE, GL_FALSE,
+		glLandscape.attrDim * sizeof(GLdouble), BUFFER_OFFSET(5 * sizeof(GLdouble)));
+
+	meshglFinishInitialization(&glLandscape);
+
+	
+	/* Setup sphere */
+	meshMesh sphere;
+	if (meshInitializeSphere(&sphere, 1.0, 20, 20) != 0)
+		return 3;
+	
+	//Setting up glSphere VAO and mesh
+	meshglInitialize(&glSphere, &sphere);
+	meshDestroy(&sphere);
+
+	glBindBuffer(GL_ARRAY_BUFFER, glSphere.buffers[0]);
+	glEnableVertexAttribArray(sha.attrLocs[ATTRPOSITION]);
+	glVertexAttribPointer(sha.attrLocs[ATTRPOSITION], 3, GL_DOUBLE, GL_FALSE,
+		glSphere.attrDim * sizeof(GLdouble), BUFFER_OFFSET(0));
+	glEnableVertexAttribArray(sha.attrLocs[ATTRST]);
+	glVertexAttribPointer(sha.attrLocs[ATTRST], 2, GL_DOUBLE, GL_FALSE,
+		glSphere.attrDim * sizeof(GLdouble), BUFFER_OFFSET(3 * sizeof(GLdouble)));
+	glEnableVertexAttribArray(sha.attrLocs[ATTRNORMAL]);
+	glVertexAttribPointer(sha.attrLocs[ATTRNORMAL], 3, GL_DOUBLE, GL_FALSE,
+		glSphere.attrDim * sizeof(GLdouble), BUFFER_OFFSET(5 * sizeof(GLdouble)));
+
+	meshglFinishInitialization(&glSphere);
+
 	return 0;
 }
 
@@ -115,6 +178,8 @@ int initializeShaderProgram(void) {
 		"#version 140\n"
 	    "uniform vec3 dLight;" // Must be normalized (unit)
 	    "uniform vec3 cLight;"
+	    "uniform vec3 pSpot;" // Must be normalized (unit)
+	    "uniform vec3 cSpot;"
 	    "uniform vec3 cAmbient;"
 		"uniform vec3 pCam;"
 		"uniform sampler2D texture0;"
@@ -125,6 +190,7 @@ int initializeShaderProgram(void) {
 		"void main() {"
 		"	vec4 rgba = vec4(vec3(texture(texture0, st)), 1.0);"
 		""
+		/* First (directional) light source */
 		"   vec3 dNormal = normalize(nop);" // diffuse
 		"   float iDiff = dot(dLight, dNormal);"
 		"   vec4 cLight = vec4(cLight, 1.0);"
@@ -149,10 +215,33 @@ int initializeShaderProgram(void) {
 		"   vec4 ambient = rgba * vec4(cAmbient, 1.0);"
 		""
 		"	fragColor = diffuse + ambient + specular;"
+		""
+		/* Light 2 (spotlight) */
+		"	vec3 dSpot = normalize(pSpot - pFragment);"
+		"   iDiff = dot(dSpot, dNormal);"
+		"   vec4 cSpot = vec4(cSpot, 1.0);"
+		""
+		"	dRefl = (2.0 * iDiff * dNormal) - dSpot;"
+		"	iSpec = dot(dRefl, dCam);"
+		"	if (iSpec < 0.0)"
+		"		iSpec = 0.0;"
+		""
+		"   if (iDiff < 0.0) {"
+	    "       iDiff = 0.0;"
+		"		iSpec = 0.0;"
+		"	}"
+        ""
+		"   diffuse = iDiff * rgba * cSpot;"
+		""
+		"	iSpec = pow(iSpec, 100.0);"
+		"	specular = iSpec * cSpec * cSpot;"
+		""
+		"	fragColor = fragColor + diffuse + ambient + specular;"
+
 		"}";
 
-    const int unifNum = 7;
-	const GLchar *uniformNames[unifNum] = {"viewing", "modeling", "dLight", "cLight", "cAmbient", "pCam", "texture0"};
+    const int unifNum = 9;
+	const GLchar *uniformNames[unifNum] = {"viewing", "modeling", "dLight", "cLight", "pSpot", "cSpot", "cAmbient", "pCam", "texture0"};
 	const GLchar **unifNames = uniformNames;
 	const int attrNum = 3;
 	const GLchar *attributeNames[attrNum] = {"position", "texCoords", "normal"};
@@ -183,27 +272,48 @@ void uniformVector3(GLdouble v[3], GLint uniformLocation) {
 }
 
 void render(double oldTime, double newTime) {
+	/* 
+	Step 1: setup data in bodies for this time
+	Update animated properties
+
+	Step 2: deploy data
+	send isometry
+	send auxiliaries
+	send textures (texRender)
+	render mesh (meshglRender)
+	texUnrender
+
+	^ this should be the same for each body, and we loop over the bodies to do this
+	*/
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(sha.program);
 
-	/* Send our own modeling transformation M to the shaders. */
+	/* Calculate capsule modeling isometry. */
 	GLdouble trans[3] = {0.0, 0.0, 0.0};
 	isoSetTranslation(&modeling, trans);
-	angle += 0.1 * (newTime - oldTime);
+	angle += 0.2 * (newTime - oldTime);
 	GLdouble axis[3] = {1.0 / sqrt(3.0), 1.0 / sqrt(3.0), 1.0 / sqrt(3.0)};
 	GLdouble rot[3][3];
 	mat33AngleAxisRotation(angle, axis, rot);
 	isoSetRotation(&modeling, rot);
 	GLdouble model[4][4];
-	isoGetHomogeneous(&modeling, model);
-	uniformMatrix44(model, sha.unifLocs[UNIFMODELING]);
+	bodySetIsometry(&capsuleBody, modeling);
+
+	/* Calculate sphere modeling isometry. */
+	transSphere[0] += 0.25 * (newTime - oldTime);
+	transSphere[1] += 0.25 * (newTime - oldTime);
+	isoSetTranslation(&modeling, transSphere);
+	mat33AngleAxisRotation(angle, axis, rot);
+	isoSetRotation(&modeling, rot);
+	bodySetIsometry(&sphereBody, modeling);
 
 	/* Send our own viewing transformation P C^-1 to the shaders. */
 	GLdouble viewing[4][4];
 	camGetProjectionInverseIsometry(&cam, viewing);
 	uniformMatrix44(viewing, sha.unifLocs[UNIFVIEWING]);
 
-	/* Create lighting uniforms */
+	/* Create lighting uniforms, send to shaders */
 	/* Create dLight uniform */
 	GLdouble dLight[3] = {-1.0, -1.0, 1.0};
 	vecUnit(3, dLight, dLight);
@@ -211,17 +321,73 @@ void render(double oldTime, double newTime) {
 	/* Create cLight uniform */
 	GLdouble cLight[3] = {1.0, 1.0, 1.0};
 	uniformVector3(cLight, sha.unifLocs[UNIFCLIGHT]);
+	/* Create pSpot uniform */
+	GLdouble pSpot[3] = {2.0, -1.0, 1.0};
+	vecUnit(3, pSpot, pSpot);
+	uniformVector3(pSpot, sha.unifLocs[UNIFPSPOT]);
+	/* Create cSpot uniform */
+	GLdouble cSpot[3] = {1.0, 1.0, 1.0};
+	uniformVector3(cSpot, sha.unifLocs[UNIFCSPOT]);
 	/* Create cAmbient uniform */
 	GLdouble cAmbient[3] = {0.1, 0.1, 0.1};
 	uniformVector3(cAmbient, sha.unifLocs[UNIFCAMBIENT]);
 	/* Create pCam uniform */
 	uniformVector3(cam.isometry.translation, sha.unifLocs[UNIFPCAMERA]);
 
+	/* Render capsule */
+	isoGetHomogeneous(&(capsuleBody.isometry), model);
+	uniformMatrix44(model, sha.unifLocs[UNIFMODELING]);
 	/* Setup texture uniform */
-	texRender(&texture0, GL_TEXTURE0, 0, sha.unifLocs[UNIFTEXTURE]);
-	meshglRender(&glCapsule);
+	texRender(capsuleBody.tex[0], GL_TEXTURE0, 0, sha.unifLocs[UNIFTEXTURE]);
+	meshglRender(capsuleBody.mesh);
 	/* Clean up texture */
-	texUnrender(&texture0, GL_TEXTURE0);
+	texUnrender(capsuleBody.tex[0], GL_TEXTURE0);
+
+	/* Render landscape */
+	isoGetHomogeneous(&(landscapeBody.isometry), model);
+	uniformMatrix44(model, sha.unifLocs[UNIFMODELING]);
+	/* Setup texture uniform */
+	texRender(landscapeBody.tex[0], GL_TEXTURE1, 1, sha.unifLocs[UNIFTEXTURE]);
+	meshglRender(landscapeBody.mesh);
+	/* Clean up texture */
+	texUnrender(landscapeBody.tex[0], GL_TEXTURE1);
+
+	/* Render sphere */
+	isoGetHomogeneous(&(sphereBody.isometry), model);
+	uniformMatrix44(model, sha.unifLocs[UNIFMODELING]);
+	/* Setup texture uniform */
+	texRender(sphereBody.tex[0], GL_TEXTURE2, 2, sha.unifLocs[UNIFTEXTURE]);
+	meshglRender(sphereBody.mesh);
+	/* Clean up texture */
+	texUnrender(sphereBody.tex[0], GL_TEXTURE2);
+}
+
+int initializeBodies(void) {
+    if (bodyInitialize(&capsuleBody, 0, 1) != 0)
+        return 8;
+    bodySetMesh(&capsuleBody, &glCapsule);
+    bodySetTexture(&capsuleBody, 0, &texture0);
+
+	if (bodyInitialize(&landscapeBody, 0, 1) != 0)
+		return 10;
+	/* Setup landscape isometry, which is constant */
+	isoIsometry landscapeIsom;
+	GLdouble rot[3][3];
+	GLdouble axis[3] = {0.0, 0.0, 1.0};
+	mat33AngleAxisRotation(0, axis, rot);
+	isoSetRotation(&landscapeIsom, rot);
+	GLdouble trans[3] = {-2.0, 0.0, -1.0};
+	isoSetTranslation(&landscapeIsom, trans);
+	bodySetIsometry(&landscapeBody, landscapeIsom);
+	bodySetMesh(&landscapeBody, &glLandscape);
+	bodySetTexture(&landscapeBody, 0, &textureWater);
+
+	if (bodyInitialize(&sphereBody, 0, 1) != 0)
+	return 11;
+	bodySetMesh(&sphereBody, &glSphere);
+	bodySetTexture(&sphereBody, 0, &textureWater);
+
+	return 0;
 }
 
 int main(void) {
@@ -264,15 +430,21 @@ int main(void) {
 	double target[3] = {0.0, 0.0, 0.0};
 	camLookAt(&cam, target, 5.0, M_PI / 3.0, -M_PI / 4.0);
 	camSetProjectionType(&cam, camPERSPECTIVE);
-	camSetFrustum(&cam, M_PI / 6.0, 5.0, 10.0, 768, 512);
+	camSetFrustum(&cam, M_PI / 3.0, 5.0, 10.0, 768, 512);
 
 	if (texInitializeFile(&texture0, "bliss.jpg", GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT) != 0)
 		return 4;
-
-    if (initializeShaderProgram() != 0)
-    	return 5;
-    if (initializeMesh() != 0)
+	if (texInitializeFile(&texture1, "grass.jpg", GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT) != 0)
+		return 5;
+	if (texInitializeFile(&textureWater, "water.jpg", GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT) != 0)
 		return 6;
+    if (initializeShaderProgram() != 0)
+    	return 7;
+    if (initializeMesh() != 0)
+		return 8;
+	if (initializeBodies() != 0)
+		return 9;
+    
     while (glfwWindowShouldClose(window) == 0) {
         oldTime = newTime;
     	newTime = getTime();
@@ -285,6 +457,11 @@ int main(void) {
 
     shaDestroy(&sha);
 	texDestroy(&texture0);
+	texDestroy(&texture1);
+	texDestroy(&textureWater);
+    bodyDestroy(&capsuleBody);
+    bodyDestroy(&landscapeBody);
+    bodyDestroy(&sphereBody);
 	glDeleteBuffers(2, buffers);
 	glfwDestroyWindow(window);
     glfwTerminate();
