@@ -330,19 +330,19 @@ void render(double oldTime, double newTime) {
 	GLdouble cAmbient[3] = {0.1, 0.1, 0.1};
 	uniformVector3(cAmbient, sha.unifLocs[UNIFCAMBIENT]);
 	/* Create pSpot uniform */
-	GLdouble pSpot[3] = {0.0, 0.0, -1.0};
+	GLdouble pSpot[3] = {0.0, 0.0, 1.0};
 	vecUnit(3, pSpot, pSpot);
 	uniformVector3(pSpot, sha.unifLocs[UNIFPSPOT]);
 	/* Create cSpot uniform */
 	GLdouble cSpot[3] = {1.0, 1.0, 1.0};
 	uniformVector3(cSpot, sha.unifLocs[UNIFCSPOT]);
 	/* Create dSpot uniform */
-	GLdouble dSpot[3] = {0.0, 0.0, 1.0};
+	GLdouble dSpot[3] = {1.0, 1.0, 1.0};
 	vecUnit(3, dSpot, dSpot);
 	uniformVector3(dSpot, sha.unifLocs[UNIFDSPOT]);
 	/* Create thSpot uniform */
-	GLdouble thSpot = M_PI / 10;
-	glUniform1i(sha.unifLocs[UNIFTHSPOT], cos(thSpot / 2.0));
+	GLdouble thSpot = M_PI / 3;
+	glUniform1f(sha.unifLocs[UNIFTHSPOT], cos(thSpot / 2));
 
 	/* Create pCam uniform */
 	uniformVector3(cam.isometry.translation, sha.unifLocs[UNIFPCAMERA]);
@@ -389,7 +389,7 @@ int initializeBodies(void) {
 	GLdouble axis[3] = {0.0, 0.0, 1.0};
 	mat33AngleAxisRotation(0, axis, rot);
 	isoSetRotation(&landscapeIsom, rot);
-	GLdouble trans[3] = {-2.0, 0.0, -1.5};
+	GLdouble trans[3] = {-15.0, -30.0, -10.5};
 	isoSetTranslation(&landscapeIsom, trans);
 	bodySetIsometry(&landscapeBody, landscapeIsom);
 	bodySetMesh(&landscapeBody, &glLandscape);
