@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 #include <sys/time.h>
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
@@ -22,6 +23,7 @@
 #include "310mesh.c"
 #include "350meshgl.c"
 #include "370body.c"
+#include "140landscape.c"
 
 #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes))
 
@@ -38,6 +40,11 @@ camCamera cam;
 texTexture texture0;
 texTexture texture1;
 texTexture textureWater;
+
+/* Camera setup, so we can be interactive */
+double cameraTarget[3] = {0.0, 0.0, 0.0};
+double cameraRho = 10.0, cameraPhi = M_PI / 6.0, cameraTheta = -M_PI / 4.0;
+double screenWidth = 768, screenHeight = 512;
 
 bodyBody capsuleBody;
 bodyBody landscapeBody;
@@ -74,7 +81,9 @@ void handleError(int error, const char *description) {
 void handleResize(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
     /* The documentation for camSetFrustum says that we must re-call it here. */
-	camSetFrustum(&cam, M_PI / 6.0, 5.0, 10.0, width, height);
+	camSetFrustum(&cam, M_PI / 6.0, 10.0, 10.0, width, height);
+	screenWidth = width;
+	screenHeight = height;
 }
 
 int initializeMesh(void) {
@@ -99,13 +108,26 @@ int initializeMesh(void) {
 	meshglFinishInitialization(&glCapsule);
 
 	/* Setup landscape */
+	int landNum = 50;
+	double landData[landNum][landNum];
+	double landMin, landMean, landMax;
+	time_t t;
+	int i;
+	srand((unsigned)time(&t));
+	landFlat(landNum, landNum, (double *)landData, 0.0);
+	for (i = 0; i < 32; i += 1)
+		landFault(landNum, landNum, (double *)landData, 1.5 - i * 0.04);
+	for (i = 0; i < 4; i += 1)
+		landBlur(landNum, landNum, (double *)landData);
+	landStatistics(landNum, landNum, (double *)landData, &landMin, &landMean, 
+		&landMax);
 	meshMesh landscape;
 	GLdouble zs[3][4] = {
 	{5.0, 4.5, 3.5, 3.0}, 
 	{3.0, 2.5, 1.5, 0.5}, 
 	{2.0, 1.5, -0.5, -1.0}};
-	// if (meshInitializeLandscape(&landscape, 3, 4, 2.0, (GLdouble *)zs) != 0)
-	if (meshInitializeBox(&landscape, -3.0, 3.0, -3.0, 3.0, -3.0, 0.0) != 0)
+	// if (meshInitializeBox(&landscape, -3.0, 3.0, -3.0, 3.0, -3.0, 0.0) != 0)
+	if (meshInitializeLandscape(&landscape, landNum, landNum, 1.0, (GLdouble *)landData) != 0)
 		return 2;
 	
 	//Setting up glLandscape VAO and mesh
@@ -403,6 +425,66 @@ int initializeBodies(void) {
 	return 0;
 }
 
+void handleKeyAny(int key, int shiftIsDown, int controlIsDown,
+		int altOptionIsDown, int superCommandIsDown) {
+	if (key == GLFW_KEY_A)
+		cameraTheta -= M_PI / 100;
+	else if (key == GLFW_KEY_D)
+		cameraTheta += M_PI / 100;
+	else if (key == GLFW_KEY_W)
+		cameraPhi -= M_PI / 100;
+	else if (key == GLFW_KEY_S)
+		cameraPhi += M_PI / 100;
+	else if (key == GLFW_KEY_Q)
+		cameraRho *= 0.9;
+	else if (key == GLFW_KEY_E)
+		cameraRho *= 1.1;
+	else if (key == GLFW_KEY_K)
+		cameraTarget[0] -= 0.5;
+	else if (key == GLFW_KEY_SEMICOLON)
+		cameraTarget[0] += 0.5;
+	else if (key == GLFW_KEY_L)
+		cameraTarget[1] -= 0.5;
+	else if (key == GLFW_KEY_O)
+		cameraTarget[1] += 0.5;
+	else if (key == GLFW_KEY_I)
+		cameraTarget[2] -= 0.5;
+	else if (key == GLFW_KEY_P)
+		cameraTarget[2] += 0.5;
+	camSetFrustum(&cam, M_PI / 6.0, 10.0, 10.0, screenWidth, screenHeight);
+	camLookAt(&cam, cameraTarget, cameraRho, cameraPhi, cameraTheta);
+}
+
+void handleKeyUp(int key, int shiftIsDown, int controlIsDown,
+        int altOptionIsDown, int superCommandIsDown) {
+    if (key == GLFW_KEY_ENTER)
+        printf("you stopped pressing the enter key\n");
+}
+
+void handleKeyDown(int key, int shiftIsDown, int controlIsDown,
+        int altOptionIsDown, int superCommandIsDown) {
+    if (key == GLFW_KEY_Q)
+        printf("you pressed Q\n");
+}
+
+void handleKey(GLFWwindow *window, int key, int scancode, int action,
+        int mods) {
+    int shiftIsDown, controlIsDown, altOptionIsDown, superCommandIsDown;
+    shiftIsDown = mods & GLFW_MOD_SHIFT;
+    controlIsDown = mods & GLFW_MOD_CONTROL;
+    altOptionIsDown = mods & GLFW_MOD_ALT;
+    superCommandIsDown = mods & GLFW_MOD_SUPER;
+    if (action == GLFW_PRESS)
+        handleKeyAny(key, shiftIsDown, controlIsDown, altOptionIsDown,
+            superCommandIsDown);
+    else if (action == GLFW_RELEASE)
+        handleKeyAny(key, shiftIsDown, controlIsDown, altOptionIsDown,
+            superCommandIsDown);
+    else if (action == GLFW_REPEAT)
+        handleKeyAny(key, shiftIsDown, controlIsDown, altOptionIsDown,
+            superCommandIsDown);
+}
+
 int main(void) {
 	double oldTime;
 	double newTime = getTime();
@@ -419,7 +501,7 @@ int main(void) {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
     GLFWwindow *window;
-    window = glfwCreateWindow(768, 512, "Learning OpenGL 2.0", NULL, NULL);
+    window = glfwCreateWindow(screenWidth, screenHeight, "Learning OpenGL 2.0", NULL, NULL);
     if (window == NULL) {
         glfwTerminate();
         return 2;
@@ -434,16 +516,19 @@ int main(void) {
     	return 3;
     }
 
+	/* Setup keybindings */
+	glfwSetKeyCallback(window, handleKey);
+
     fprintf(stderr, "main: OpenGL %s, GLSL %s.\n",
 		glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-	double target[3] = {0.0, 0.0, 0.0};
-	camLookAt(&cam, target, 5.0, M_PI / 3.0, -M_PI / 4.0);
+	camLookAt(&cam, cameraTarget, cameraRho, cameraPhi, cameraTheta);
+	camLookAt(&cam, cameraTarget, cameraRho, cameraPhi, cameraTheta);
 	camSetProjectionType(&cam, camPERSPECTIVE);
-	camSetFrustum(&cam, M_PI / 3.0, 5.0, 10.0, 768, 512);
+	camSetFrustum(&cam, M_PI / 6.0, 5.0, 10.0, 768, 512);
 
 	if (texInitializeFile(&texture0, "bliss.jpg", GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT) != 0)
 		return 4;
@@ -467,6 +552,7 @@ int main(void) {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
 
     shaDestroy(&sha);
 	texDestroy(&texture0);
