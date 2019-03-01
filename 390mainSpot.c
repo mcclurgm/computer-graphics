@@ -346,7 +346,7 @@ void render(double oldTime, double newTime) {
 	vecUnit(3, dLight, dLight);
 	uniformVector3(dLight, sha.unifLocs[UNIFDLIGHT]);
 	/* Create cLight uniform */
-	GLdouble cLight[3] = {0.1, 0.1, 0.1};
+	GLdouble cLight[3] = {0.5, 0.5, 0.5};
 	uniformVector3(cLight, sha.unifLocs[UNIFCLIGHT]);
 	/* Create cAmbient uniform */
 	GLdouble cAmbient[3] = {0.1, 0.1, 0.1};
