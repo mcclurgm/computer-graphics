@@ -7,7 +7,7 @@
 through the accessor functions. */
 typedef struct meshglMesh meshglMesh;
 struct meshglMesh {
-	GLuint triNum, vertNum, attrDim, vao;
+	GLuint triNum, vertNum, attrDim, vaos[2];
 	GLuint buffers[2];
 };
 
@@ -29,24 +29,35 @@ void meshglInitialize(meshglMesh *mesh, const meshMesh *base) {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->triNum * 3 * sizeof(GLuint),
 		(GLvoid *)base->tri, GL_STATIC_DRAW);
 
-	glGenVertexArrays(1, &(mesh->vao));
-	glBindVertexArray(mesh->vao);
-}
-
-/* Renders the mesh. Before this is called, you must have a complete VAO. */
-void meshglRender(const meshglMesh *mesh) {
-	glBindVertexArray(mesh->vao);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->buffers[1]);
-    glDrawElements(GL_TRIANGLES, mesh->triNum * 3, GL_UNSIGNED_INT, meshglBUFFEROFFSET(0));
-	glBindVertexArray(0);
+	glGenVertexArrays(2, mesh->vaos);
+	glBindVertexArray(mesh->vaos[0]);
 }
 
 /* Immediately after meshglInitialize, the user must configure the attributes 
 using glEnableVertexAttribArray and glVertexAttribPointer. Immediately after 
-that configuration, the user must call this function to complete the 
+that configuration, the user must call this function to continue the 
+initialization of the mesh. */
+void meshglContinueInitialization(meshglMesh *mesh) {
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->buffers[1]);
+	glBindVertexArray(mesh->vaos[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->buffers[0]);
+}
+
+/* Immediately after meshglInitialize, the user must configure the attributes 
+using glEnableVertexAttribArray and glVertexAttribPointer. Then, they must 
+configure the attributes of the second VAO. Immediately after that 
+configuration, the user must call this function to complete the 
 initialization of the mesh. */
 void meshglFinishInitialization(meshglMesh *mesh) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->buffers[1]);
+	glBindVertexArray(0);
+}
+
+/* Renders the mesh. Before this is called, you must have a complete vaos. */
+void meshglRender(const meshglMesh *mesh, GLuint vaoIndex) {
+	glBindVertexArray(mesh->vaos[vaoIndex]);
+	glDrawElements(GL_TRIANGLES, mesh->triNum * 3, GL_UNSIGNED_INT, 
+		meshglBUFFEROFFSET(0));
 	glBindVertexArray(0);
 }
 
@@ -54,5 +65,6 @@ void meshglFinishInitialization(meshglMesh *mesh) {
 done using the mesh. */
 void meshglDestroy(meshglMesh *mesh) {
 	glDeleteBuffers(2, mesh->buffers);
-	glDeleteVertexArrays(1, &(mesh->vao));
+	glDeleteVertexArrays(1, &(mesh->vaos[0]));
+	glDeleteVertexArrays(1, &(mesh->vaos[1]));
 }
