@@ -219,7 +219,7 @@ void camWorldFromScreenHomogeneous(const camCamera *cam, double width,
 	/* Returns C P-1 V-1 */
 	/* Setup matrices */
 	double c[4][4], pInv[4][4], vInv[4][4];
-	isoGetInverseHomogeneous(&(cam->isometry), c);
+	isoGetHomogeneous(&(cam->isometry), c);
 	camGetInversePerspective(cam, pInv);
 	mat44InverseViewport(width, height, vInv);
 

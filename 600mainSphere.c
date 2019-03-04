@@ -19,7 +19,7 @@
 #define SCREENHEIGHT 512
 
 #define EPSILON 0.00000001
-//#define INFINITY 100000000
+// #define INFINITY 100000000
 
 camCamera camera;
 double cameraTarget[3] = {0.0, 0.0, 0.0};
@@ -58,10 +58,12 @@ rayRecord sphereIntersection(const isoIsometry *iso, double radius,
 	double b = 2 * vecDot(3, d, eMinusC);
 	double c = pow(vecLength(3, eMinusC), 2) - (radius * radius);
 
-	double descriminant = (b * b) - 4 * a * c;
+	double descriminant = pow(b, 2) - 4 * a * c;
+	if (descriminant >= 0)
+		printf("descriminant: %f\n", descriminant);
 	if (descriminant <= 0) {
 		result.intersected = 0;
-		result.t = INFINITY + 1;
+		result.t = INFINITY;
 	} else {
 		double tMinus = (-b - sqrt(descriminant)) / (2 * a);
 		if (tMinus >= tStart && tMinus <= tEnd) {
@@ -74,7 +76,7 @@ rayRecord sphereIntersection(const isoIsometry *iso, double radius,
 				result.t = tPlus;
 			} else {
 				result.intersected = 0;
-				result.t = INFINITY + 1;
+				result.t = INFINITY;
 			}
 		}
 	}
@@ -117,11 +119,10 @@ void render(void) {
 			/* Test the second sphere. */
 			recB = sphereIntersection(&isomB, radiusB, e, d, tStart, tEnd);
 
-			if (recA.t < recB.t)
-				printf("A: %f B %f\n", recA.t, recB.t);
+			// printf("A: %f B %f\n", recA.t, recB.t);
 
 			/* Choose the winner. */
-			if (recA.t != 0 && recB.t != 0) {
+			if (recA.t != 0 || recB.t != 0) {
 				if (recA.t < recB.t)
 					vecCopy(3, colorA, rgb);
 				else
