@@ -59,8 +59,6 @@ rayRecord sphereIntersection(const isoIsometry *iso, double radius,
 	double c = pow(vecLength(3, eMinusC), 2) - (radius * radius);
 
 	double descriminant = pow(b, 2) - 4 * a * c;
-	if (descriminant >= 0)
-		printf("descriminant: %f\n", descriminant);
 	if (descriminant <= 0) {
 		result.intersected = 0;
 		result.t = INFINITY;
@@ -113,26 +111,23 @@ void render(void) {
 			tStart = EPSILON;
 			tEnd = INFINITY;
 
+			/* Set default color */
+			rgb[0] = 0;
+			rgb[1] = 0;
+			rgb[2] = 0;
+			
 			/* Test the first sphere. */
 			recA = sphereIntersection(&isomA, radiusA, e, d, tStart, tEnd);
+			if (recA.intersected) {
+				tEnd = recA.t;
+				vecCopy(3, colorA, rgb);
+			}
 
 			/* Test the second sphere. */
 			recB = sphereIntersection(&isomB, radiusB, e, d, tStart, tEnd);
-
-			// printf("A: %f B %f\n", recA.t, recB.t);
-
-			/* Choose the winner. */
-			if (recA.t != 0 || recB.t != 0) {
-				if (recA.t < recB.t)
-					vecCopy(3, colorA, rgb);
-				else
-					vecCopy(3, colorB, rgb);
-			} else {
-				rgb[0] = 0;
-				rgb[1] = 0;
-				rgb[2] = 0;
+			if (recB.intersected) { // sphere B wins
+				vecCopy(3, colorB, rgb);
 			}
-				
 
 			pixSetRGB(i, j, rgb[0], rgb[1], rgb[2]);
 		}
