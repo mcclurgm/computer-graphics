@@ -126,3 +126,36 @@ void vec3Spherical(double rho, double phi, double theta, double v[3]) {
     v[1] = rho * sin(phi) * sin(theta);
     v[2] = rho * cos(phi);
 }
+
+/* Partial inverse to vec3Spherical. Always returns 0 <= rho, 0 <= phi <= pi, 
+and 0 <= theta <= 2 pi. In cartography this function is called the 
+equirectangular projection, I think. */
+void vec3Rectangular(const double v[3], double *rho, double *phi, 
+		double *theta) {
+	*rho = sqrt(vecDot(3, v, v));
+	if (*rho == 0.0) {
+		/* The point v is near the origin. */
+		*phi = 0.0;
+		*theta = 0.0;
+	} else {
+		*phi = acos(v[2] / *rho);
+		double rhoSinPhi = *rho * sin(*phi);
+		if (rhoSinPhi == 0.0) {
+			/* The point v is near the z-axis. */
+			if (v[2] >= 0.0) {
+				*rho = v[2];
+				*phi = 0.0;
+				*theta = 0.0;
+			} else {
+				*rho = -v[2];
+				*phi = M_PI;
+				*theta = 0.0;
+			}
+		} else {
+			/* This is the typical case. */
+			*theta = atan2(v[1], v[0]);
+			if (*theta < 0.0)
+				*theta += 2.0 * M_PI;
+		}
+	}
+}

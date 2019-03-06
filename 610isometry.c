@@ -34,14 +34,14 @@ void isoTransformPoint(isoIsometry *iso, const double p[3], double isoP[3]) {
 then untransform the result, then you recover the original point. Similarly, if
 you untransform a point and then transform the result, then you recover the
 original point. The output CANNOT safely alias the input. */
-void isoUntransformPoint(isoIsometry *iso, const double isoP[3], double p[3]) {
+void isoUntransformPoint(const isoIsometry *iso, const double isoP[3], double p[3]) {
     vecSubtract(3, isoP, iso->translation, p);
     mat331TransposeMultiply(iso->rotation, p, p);
 }
 
 /* Applies the rotation to a vector. The output CANNOT safely alias the input.
 */
-void isoRotateVector(isoIsometry *iso, const double v[3], double rotV[3]) {
+void isoRotateVector(const isoIsometry *iso, const double v[3], double rotV[3]) {
 	mat331Multiply(iso->rotation, v, rotV);
 }
 
