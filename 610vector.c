@@ -12,7 +12,8 @@ void vecCopy(int dim, const double v[], double copy[]) {
 	}
 }
 
-/* Adds the dim-dimensional vectors v and w. */
+/* Adds the dim-dimensional vectors v and w. 
+Alias safe. */
 void vecAdd(int dim, const double v[], const double w[], double vPlusW[]) {
 	int i;
 	for(i = 0; i < dim; i++) {
@@ -20,7 +21,8 @@ void vecAdd(int dim, const double v[], const double w[], double vPlusW[]) {
 	}
 }
 
-/* Subtracts the dim-dimensional vectors v and w. */
+/* Subtracts the dim-dimensional vectors v and w. 
+Alias safe. */
 void vecSubtract(int dim, const double v[], const double w[],
 		double vMinusW[]) {
 	int i;
@@ -29,7 +31,8 @@ void vecSubtract(int dim, const double v[], const double w[],
 	}
 }
 
-/* Scales the dim-dimensional vector w by the number c. */
+/* Scales the dim-dimensional vector w by the number c. 
+Alias safe. */
 void vecScale(int dim, double c, const double w[], double cTimesW[]) {
 	int i;
 	for(i = 0; i < dim; i++) {
