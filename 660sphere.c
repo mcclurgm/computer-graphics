@@ -81,6 +81,11 @@ void sphereColor(const void *body, const rayQuery *query,
     vecUnit(3, dCameraLocal, dCameraLocal);
     diffuseAndSpecular(dNormalLocal, dLightLocal, dCameraLocal, cDiff, 
         cSpec, shininess, cLight, rgb);
+	
+	/* Ambient light. */
+	rgb[0] += cDiff[0] * cAmbient[0];
+	rgb[1] += cDiff[1] * cAmbient[1];
+	rgb[2] += cDiff[2] * cAmbient[2];
 }
 
 rayClass sphereClass = {sphereIntersection, sphereColor};
