@@ -23,11 +23,14 @@
 #define SCREENWIDTH 512
 #define SCREENHEIGHT 512
 #define BODYNUM 5
-#define LIGHTNUM 1
+#define LIGHTNUM 2
 
-double dLightRaw[3] = {1.0, 1.0, 1.0}, dLight[3];
+double dLightRaw[3] = {-1.0, -1.0, 1.0}, dLight[3];
+double pLight[3] = {1.0, 1.0, 10.0};
+// double cLight[3] = {1.0, 1.0, 1.0};
 double cLight[3] = {1.0, 1.0, 1.0};
-double cAmbient[3] = {0.1, 0.1, 0.1};
+double cTest[3] = {1.0, 1.0, 0.0};
+double cAmbient[3] = {0.3, 0.3, 0.3};
 
 #include "680cylinder.c"
 #include "680sphere.c"
@@ -44,7 +47,8 @@ sphereSphere sphere;
 plaPlane plane;
 const void *bodies[BODYNUM] = {&cylRed, &cylGreen, &cylBlue, &sphere, &plane};
 omniLight omni;
-const void *lights[LIGHTNUM] = {&omni};
+dirLight dir;
+const void *lights[LIGHTNUM] = {&dir, &omni};
 
 /* Rendering ******************************************************************/
 
@@ -93,7 +97,7 @@ void render(void) {
 			if (index >= 0) {
 				class = (rayClass **)(bodies[index]);
 				(*class)->color(bodies[index], &query, &response, BODYNUM, 
-                bodies, LIGHTNUM, lights, cAmbient, rgb);
+                    bodies, LIGHTNUM, lights, cAmbient, rgb);
 			} else
 				vec3Set(0.0, 0.0, 0.0, rgb);
 			pixSetRGB(i, j, rgb[0], rgb[1], rgb[2]);
@@ -190,6 +194,7 @@ void initializePlane(plaPlane *pl, const double rot[3][3],
 
 void initializeOmni(omniLight *light, const double pLight[3], const double cLight[3]) {
     light->class = &omniClass;
+    printf("dLight %f\n", pLight[0]);
     vecUnit(3, pLight, light->pLight);
     vecCopy(3, cLight, light->cLight);
 }
@@ -205,6 +210,7 @@ int main(void) {
 		return 1;
 	else {
 		/* Initialize the scene. */
+        vecUnit(3, dLightRaw, dLight);
 		camSetProjectionType(&camera, camPERSPECTIVE);
 		camSetFrustum(&camera, M_PI / 6.0, cameraRho, 10.0, SCREENWIDTH, 			
 			SCREENHEIGHT);
@@ -231,13 +237,16 @@ int main(void) {
 		initializeCylinder(&cylGreen, 0.1, rot, center, &textureGreen);
 		mat33AngleAxisRotation(0.0, axis, rot);
 		initializeCylinder(&cylBlue, 0.1, rot, center, &textureBlue);
-        initializeSphere(&sphere, 1.0, rot, center, &zuck);
+        
+        double sphereTransl[3] = {1.0, -1.0, 0.0};
+        initializeSphere(&sphere, 1.0, rot, sphereTransl, &zuck);
 		// mat33AngleAxisRotation(0.0, axis, rot);
 		mat33AngleAxisRotation(0.0 * M_PI / 3.0, axis, rot);
 		initializePlane(&plane, rot, center, &zuck);
 
         /* Initialize lights */
-        initializeOmni(&omni, dLightRaw, cLight);
+        initializeOmni(&omni, pLight, cLight);
+        initializeDir(&dir, dLight, cTest);
         
 		/* Initialize and run the user interface. */
 		pixSetKeyDownHandler(handleKeyDown);

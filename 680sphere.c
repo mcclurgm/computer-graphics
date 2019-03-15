@@ -60,12 +60,16 @@ void sphereColor(const void *body, const rayQuery *query,
 		int lightNum, const void *lights[], const double cAmbient[3], 
 		double rgb[3]) {
     const sphereSphere *sphere = (const sphereSphere *)body;
+    
+    rgb[0] = 0.0;
+    rgb[1] = 0.0;
+    rgb[2] = 0.0;
 
 	/* x = e + t d. */
-	double x[3], xLocal[3];
-	vecScale(3, query->tEnd, query->d, x);
-	vecAdd(3, query->e, x, x);
-	isoUntransformPoint(&(sphere->isometry), x, xLocal);
+	double xWorld[3], xLocal[3];
+	vecScale(3, query->tEnd, query->d, xWorld);
+	vecAdd(3, query->e, xWorld, xWorld);
+	isoUntransformPoint(&(sphere->isometry), xWorld, xLocal);
 
     double texCoords[2];
     sphereTexCoords(xLocal, texCoords);
@@ -73,16 +77,30 @@ void sphereColor(const void *body, const rayQuery *query,
     texSample(sphere->texture, texCoords[0], texCoords[1], cDiff);
 
     double cSpec[3] = {0.5, 0.5, 0.5}, shininess = 16.0;
+    
     /* Do lighting calculations in local coordinates. */
-    double dNormalLocal[3], dLightLocal[3];
+    double dNormalLocal[3];
     vecUnit(3, xLocal, dNormalLocal);
-    isoUnrotateVector(&(sphere->isometry), dLight, dLightLocal);
+
     double pCameraLocal[3], dCameraLocal[3];
     isoUntransformPoint(&(sphere->isometry), query->e, pCameraLocal);
     vecSubtract(3, pCameraLocal, xLocal, dCameraLocal);
     vecUnit(3, dCameraLocal, dCameraLocal);
-    rayDiffuseAndSpecular(dNormalLocal, dLightLocal, dCameraLocal, cDiff, 
-        cSpec, shininess, cLight, rgb);
+    
+    for (int i = 0; i < lightNum; i++) {
+        double rgbResult[3], dLightLocal[3];
+
+		lightClass **class;
+		class = (lightClass **)(lights[i]);
+		lightResponse response = (*class)->lighting(lights[i], xWorld);
+
+        isoUnrotateVector(&(sphere->isometry), response.dLight, dLightLocal);
+        
+		rayDiffuseAndSpecular(dNormalLocal, dLightLocal, dCameraLocal, cDiff, 
+			cSpec, shininess, response.cLight, rgbResult);
+        
+        vecAdd(3, rgbResult, rgb, rgb);
+    }
 	
 	/* Ambient light. */
 	rgb[0] += cDiff[0] * cAmbient[0];

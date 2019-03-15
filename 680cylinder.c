@@ -93,7 +93,7 @@ void cylColor(const void *body, const rayQuery *query,
 		lightClass **class;
 		class = (lightClass **)(lights[i]);
 		lightResponse response = (*class)->lighting(lights[i], xWorld);
-
+		
 		isoUnrotateVector(&(cyl->isometry), response.dLight, dLightLocal);
 		
 		rayDiffuseAndSpecular(dNormalLocal, dLightLocal, dCameraLocal, cDiff, 

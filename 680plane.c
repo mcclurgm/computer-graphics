@@ -55,12 +55,16 @@ void planeColor(const void *body, const rayQuery *query,
 		int lightNum, const void *lights[], const double cAmbient[3], 
 		double rgb[3]) {
     const plaPlane *plane = (const plaPlane *)body;
+    
+    rgb[0] = 0.0;
+    rgb[1] = 0.0;
+    rgb[2] = 0.0;
 
 	/* x = e + t d. */
-	double x[3], xLocal[3];
-	vecScale(3, query->tEnd, query->d, x);
-	vecAdd(3, query->e, x, x);
-	isoUntransformPoint(&(plane->isometry), x, xLocal);
+	double xWorld[3], xLocal[3];
+	vecScale(3, query->tEnd, query->d, xWorld);
+	vecAdd(3, query->e, xWorld, xWorld);
+	isoUntransformPoint(&(plane->isometry), xWorld, xLocal);
 
     double texCoords[2];
     planeTexCoords(xLocal, texCoords);
@@ -76,8 +80,21 @@ void planeColor(const void *body, const rayQuery *query,
     isoUntransformPoint(&(plane->isometry), query->e, pCameraLocal);
     vecSubtract(3, pCameraLocal, xLocal, dCameraLocal);
     vecUnit(3, dCameraLocal, dCameraLocal);
-    rayDiffuseAndSpecular(dNormalLocal, dLightLocal, dCameraLocal, cDiff, 
-        cSpec, shininess, cLight, rgb);
+        
+    for (int i = 0; i < lightNum; i++) {
+        double rgbResult[3], dLightLocal[3];
+
+		lightClass **class;
+		class = (lightClass **)(lights[i]);
+		lightResponse response = (*class)->lighting(lights[i], xWorld);
+
+        isoUnrotateVector(&(plane->isometry), response.dLight, dLightLocal);
+        
+		rayDiffuseAndSpecular(dNormalLocal, dLightLocal, dCameraLocal, cDiff, 
+			cSpec, shininess, response.cLight, rgbResult);
+        
+        vecAdd(3, rgbResult, rgb, rgb);
+    }
 
 	/* Ambient light. */
 	rgb[0] += cDiff[0] * cAmbient[0];
