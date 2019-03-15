@@ -56,7 +56,9 @@ void sphereTexCoords(const double xLocal[3], double st[2]) {
 }
 
 void sphereColor(const void *body, const rayQuery *query, 
-		const rayResponse *response, double rgb[3]) {
+		const rayResponse *response, int bodyNum, const void *bodies[], 
+		int lightNum, const void *lights[], const double cAmbient[3], 
+		double rgb[3]) {
     const sphereSphere *sphere = (const sphereSphere *)body;
 
 	/* x = e + t d. */
@@ -79,7 +81,7 @@ void sphereColor(const void *body, const rayQuery *query,
     isoUntransformPoint(&(sphere->isometry), query->e, pCameraLocal);
     vecSubtract(3, pCameraLocal, xLocal, dCameraLocal);
     vecUnit(3, dCameraLocal, dCameraLocal);
-    diffuseAndSpecular(dNormalLocal, dLightLocal, dCameraLocal, cDiff, 
+    rayDiffuseAndSpecular(dNormalLocal, dLightLocal, dCameraLocal, cDiff, 
         cSpec, shininess, cLight, rgb);
 	
 	/* Ambient light. */

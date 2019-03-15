@@ -51,7 +51,9 @@ void planeTexCoords(const double xLocal[3], double st[2]) {
 }
 
 void planeColor(const void *body, const rayQuery *query, 
-		const rayResponse *response, double rgb[3]) {
+		const rayResponse *response, int bodyNum, const void *bodies[], 
+		int lightNum, const void *lights[], const double cAmbient[3], 
+		double rgb[3]) {
     const plaPlane *plane = (const plaPlane *)body;
 
 	/* x = e + t d. */
@@ -74,7 +76,7 @@ void planeColor(const void *body, const rayQuery *query,
     isoUntransformPoint(&(plane->isometry), query->e, pCameraLocal);
     vecSubtract(3, pCameraLocal, xLocal, dCameraLocal);
     vecUnit(3, dCameraLocal, dCameraLocal);
-    diffuseAndSpecular(dNormalLocal, dLightLocal, dCameraLocal, cDiff, 
+    rayDiffuseAndSpecular(dNormalLocal, dLightLocal, dCameraLocal, cDiff, 
         cSpec, shininess, cLight, rgb);
 
 	/* Ambient light. */
