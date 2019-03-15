@@ -67,4 +67,27 @@ void rayDiffuseAndSpecular(const double dNormal[3], const double dLight[3],
 	vecAdd(3, diffuse, specular, rgb);
 }
 
+/* If the ray does not intersect the scene, then sets index to -1. If the ray 
+intersects the scene, then updates query->tEnd, outputs the index of the body 
+in the list of bodies, and returns the corresponding rayResponse. */
+rayResponse rayIntersection(int bodyNum, const void *bodies[], rayQuery *query, 
+		int *index) {
+	rayResponse candidate;
+	rayResponse bestResponse;
+	int bestK = -1;
+	rayClass **class;
+	for (int k = 0; k < bodyNum; k += 1) {
+		class = (rayClass **)(bodies[k]);
+		candidate = (*class)->intersection(bodies[k], query);
+		if (candidate.intersected) {
+			query->tEnd = candidate.t;
+			bestResponse = candidate;
+			bestK = k;
+		}
+	}
+
+	*index = bestK;
+    return bestResponse;
+}
+
 

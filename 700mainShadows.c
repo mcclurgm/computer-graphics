@@ -15,7 +15,7 @@
 #include "040texture.c"
 #include "610isometry.c"
 #include "600camera.c"
-#include "680ray.c"
+#include "700ray.c"
 #include "680light.c"
 #include "680omnidirectional.c"
 #include "690directional.c"
@@ -23,7 +23,7 @@
 #define SCREENWIDTH 512
 #define SCREENHEIGHT 512
 #define BODYNUM 5
-#define LIGHTNUM 1
+#define LIGHTNUM 2
 
 double dLightRaw[3] = {-1.0, -1.0, 1.0}, dLight[3];
 double pLight[3] = {1.0, 1.0, 10.0};
@@ -32,9 +32,9 @@ double cLight[3] = {1.0, 1.0, 1.0};
 double cTest[3] = {1.0, 1.0, 0.0};
 double cAmbient[3] = {0.3, 0.3, 0.3};
 
-#include "680cylinder.c"
+#include "700cylinder.c"
 #include "680sphere.c"
-#include "680plane.c"
+#include "700plane.c"
 
 camCamera camera;
 double cameraTarget[3] = {0.0, 0.0, 0.0};
@@ -48,28 +48,9 @@ plaPlane plane;
 const void *bodies[BODYNUM] = {&cylRed, &cylGreen, &cylBlue, &sphere, &plane};
 omniLight omni;
 dirLight dir;
-const void *lights[LIGHTNUM] = {&omni, &dir};
+const void *lights[LIGHTNUM] = {&dir, &omni};
 
 /* Rendering ******************************************************************/
-
-/* If the ray does not intersect the scene, then returns -1. If the ray 
-intersects the scene, then updates query->tEnd and response and returns the 
-index of the body that the ray intersects (first). */
-int queryScene(rayQuery *query, rayResponse *response) {
-	rayResponse candidate;
-	int bestK = -1;
-	rayClass **class;
-	for (int k = 0; k < BODYNUM; k += 1) {
-		class = (rayClass **)(bodies[k]);
-		candidate = (*class)->intersection(bodies[k], query);
-		if (candidate.intersected) {
-			query->tEnd = candidate.t;
-			*response = candidate;
-			bestK = k;
-		}
-	}
-	return bestK;
-}
 
 void render(void) {
 	double homog[4][4], world[4], rgb[3];
@@ -91,7 +72,8 @@ void render(void) {
 			/* Query the scene to find the intersection, if any. */
 			query.tStart = rayEPSILON;
 			query.tEnd = rayINFINITY;
-			int index = queryScene(&query, &response);
+			int index;
+			response = rayIntersection(BODYNUM, bodies, &query, &index);
 			/* Color the pixel. */
 			rayClass **class;
 			if (index >= 0) {
@@ -238,7 +220,7 @@ int main(void) {
 		mat33AngleAxisRotation(0.0, axis, rot);
 		initializeCylinder(&cylBlue, 0.1, rot, center, &textureBlue);
         
-        double sphereTransl[3] = {1.0, -1.0, 0.0};
+        double sphereTransl[3] = {-1.0, -1.0, 1.0};
         initializeSphere(&sphere, 1.0, rot, sphereTransl, &zuck);
 		// mat33AngleAxisRotation(0.0, axis, rot);
 		mat33AngleAxisRotation(0.0 * M_PI / 3.0, axis, rot);

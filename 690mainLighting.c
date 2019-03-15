@@ -23,7 +23,7 @@
 #define SCREENWIDTH 512
 #define SCREENHEIGHT 512
 #define BODYNUM 5
-#define LIGHTNUM 1
+#define LIGHTNUM 2
 
 double dLightRaw[3] = {-1.0, -1.0, 1.0}, dLight[3];
 double pLight[3] = {1.0, 1.0, 10.0};
@@ -48,7 +48,7 @@ plaPlane plane;
 const void *bodies[BODYNUM] = {&cylRed, &cylGreen, &cylBlue, &sphere, &plane};
 omniLight omni;
 dirLight dir;
-const void *lights[LIGHTNUM] = {&omni, &dir};
+const void *lights[LIGHTNUM] = {&dir, &omni};
 
 /* Rendering ******************************************************************/
 
