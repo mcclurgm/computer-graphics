@@ -34,7 +34,7 @@ struct rayClass {
 	reponse to that query are included in the parameters. */
 	void (*color)(const void *body, const rayQuery *query, 
 		const rayResponse *response, int bodyNum, const void *bodies[], 
-		int lightNum, const void *lights[], const double cAmbient[3], 
+		int lightNum, const void *lights[], const double cAmbient[3], int recursionNum, 
 		double rgb[3]);
 };
 
@@ -90,4 +90,21 @@ rayResponse rayIntersection(int bodyNum, const void *bodies[], rayQuery *query,
     return bestResponse;
 }
 
-
+/* Outputs the RGB color of the specified ray. If the ray hits nothing in the 
+scene, then outputs some fixed background color. Also returns the response to 
+the given query. */
+rayResponse rayColor(int bodyNum, const void *bodies[], int lightNum, 
+		const void *lights[], const double cAmbient[3], rayQuery *query, 
+		int recursionNum, double rgb[3]) {
+	int index;
+	rayResponse response = rayIntersection(bodyNum, bodies, query, &index);
+	/* Color the pixel. */
+	rayClass **class;
+	if (index >= 0) {
+		class = (rayClass **)(bodies[index]);
+		(*class)->color(bodies[index], query, &response, bodyNum, 
+			bodies, lightNum, lights, cAmbient, recursionNum, rgb);
+	} else
+		vec3Set(0.0, 0.0, 0.0, rgb);
+	return response;
+}

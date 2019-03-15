@@ -15,7 +15,7 @@
 #include "040texture.c"
 #include "610isometry.c"
 #include "600camera.c"
-#include "700ray.c"
+#include "710ray.c"
 #include "680light.c"
 #include "680omnidirectional.c"
 #include "690directional.c"
@@ -24,6 +24,7 @@
 #define SCREENHEIGHT 512
 #define BODYNUM 5
 #define LIGHTNUM 2
+#define RECURSIONNUM 2
 
 double dLightRaw[3] = {-1.0, -1.0, 1.0}, dLight[3];
 double pLight[3] = {-1.0, 1.0, 10.0};
@@ -32,9 +33,9 @@ double cLight[3] = {1.0, 1.0, 1.0};
 double cTest[3] = {1.0, 1.0, 0.0};
 double cAmbient[3] = {0.3, 0.3, 0.3};
 
-#include "700cylinder.c"
-#include "700sphere.c"
-#include "700plane.c"
+#include "710cylinder.c"
+#include "710sphere.c"
+#include "710plane.c"
 
 camCamera camera;
 double cameraTarget[3] = {0.0, 0.0, 0.0};
@@ -72,16 +73,7 @@ void render(void) {
 			/* Query the scene to find the intersection, if any. */
 			query.tStart = rayEPSILON;
 			query.tEnd = rayINFINITY;
-			int index;
-			response = rayIntersection(BODYNUM, bodies, &query, &index);
-			/* Color the pixel. */
-			rayClass **class;
-			if (index >= 0) {
-				class = (rayClass **)(bodies[index]);
-				(*class)->color(bodies[index], &query, &response, BODYNUM, 
-                    bodies, LIGHTNUM, lights, cAmbient, rgb);
-			} else
-				vec3Set(0.0, 0.0, 0.0, rgb);
+			response = rayColor(BODYNUM, bodies, LIGHTNUM, lights, cAmbient, &query, RECURSIONNUM, rgb);
 			pixSetRGB(i, j, rgb[0], rgb[1], rgb[2]);
 		}
 	}

@@ -58,7 +58,7 @@ void cylTexCoords(const double xLocal[3], double st[2]) {
 void cylColor(const void *body, const rayQuery *query, 
 		const rayResponse *response, int bodyNum, const void *bodies[], 
 		int lightNum, const void *lights[], const double cAmbient[3], 
-		double rgb[3]) {
+		int recursionNum, double rgb[3]) {
 	const cylCylinder *cyl = (const cylCylinder *)body;
 
 	rgb[0] = 0.0;
@@ -87,6 +87,7 @@ void cylColor(const void *body, const rayQuery *query,
 	vecSubtract(3, pCameraLocal, xLocal, dCameraLocal);
 	vecUnit(3, dCameraLocal, dCameraLocal);
 
+	/* Lighting contribution */
 	rayQuery shadowQuery;
 	for (int i = 0; i < lightNum; i++) {
 		double rgbResult[3], dLightLocal[3];
@@ -103,7 +104,6 @@ void cylColor(const void *body, const rayQuery *query,
 		rayResponse intersection = rayIntersection(bodyNum, bodies, &shadowQuery, &index);
 
         double distance = rayINFINITY + 1;
-//             printf("distance %f lightResponse %f\n", distance, response.distance);
         if (intersection.intersected) {
             double scaledD[3];
             vecScale(3, intersection.t, shadowQuery.d, scaledD);
@@ -119,6 +119,26 @@ void cylColor(const void *body, const rayQuery *query,
         	
         	vecAdd(3, rgbResult, rgb, rgb);
         }
+	}
+
+	/* Mirror contribution */
+	if (recursionNum > 0) {
+		double rgbResult[3];
+
+		rayQuery mirrorQuery;
+		mirrorQuery.tStart = rayEPSILON;
+		mirrorQuery.tEnd = rayINFINITY;
+		vecCopy(3, xWorld, mirrorQuery.e);
+		double twiceDot, dRefl[3];
+		twiceDot = 2.0 * vecDot(3, dNormalLocal, dCameraLocal);
+		vecScale(3, twiceDot, dNormalLocal, dRefl);
+		vecSubtract(3, dRefl, dCameraLocal, dRefl);
+		isoRotateVector(&(cyl)->isometry, dRefl, mirrorQuery.d);
+
+		rayColor(bodyNum, bodies, lightNum, lights, cAmbient, &mirrorQuery, recursionNum - 1, rgbResult);
+		rgb[0] += rgbResult[0] * cSpec[0];
+		rgb[1] += rgbResult[1] * cSpec[1];
+		rgb[2] += rgbResult[2] * cSpec[2];
 	}
 
 	/* Ambient light. */
