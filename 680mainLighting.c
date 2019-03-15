@@ -85,7 +85,7 @@ void render(void) {
 		for (int j = 0; j < SCREENHEIGHT; j += 1) {
 			screen[1] = j;
 			/* Compute the direction d from the camera to the pixel. */
-			mat441Multiply(homog, screen, world);
+			mat441Multiply(homog, screen, worrld);
 			vecScale(4, 1.0 / world[3], world, world);
 			vecSubtract(3, world, query.e, query.d);
 			/* Query the scene to find the intersection, if any. */

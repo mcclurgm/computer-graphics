@@ -26,14 +26,14 @@
 #define LIGHTNUM 2
 
 double dLightRaw[3] = {-1.0, -1.0, 1.0}, dLight[3];
-double pLight[3] = {1.0, 1.0, 10.0};
+double pLight[3] = {-1.0, 1.0, 10.0};
 // double cLight[3] = {1.0, 1.0, 1.0};
 double cLight[3] = {1.0, 1.0, 1.0};
 double cTest[3] = {1.0, 1.0, 0.0};
 double cAmbient[3] = {0.3, 0.3, 0.3};
 
 #include "700cylinder.c"
-#include "680sphere.c"
+#include "700sphere.c"
 #include "700plane.c"
 
 camCamera camera;

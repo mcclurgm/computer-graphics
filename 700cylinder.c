@@ -97,13 +97,14 @@ void cylColor(const void *body, const rayQuery *query,
 
 		shadowQuery.tStart = rayEPSILON;
 		shadowQuery.tEnd = rayINFINITY;
+		vecCopy(3, xWorld, shadowQuery.e);
+		vecCopy(3, response.dLight, shadowQuery.d);
 		int index;
 		rayResponse intersection = rayIntersection(bodyNum, bodies, &shadowQuery, &index);
 
         double distance = rayINFINITY + 1;
 //             printf("distance %f lightResponse %f\n", distance, response.distance);
         if (intersection.intersected) {
-            printf("Intersected!\n");
             double scaledD[3];
             vecScale(3, intersection.t, shadowQuery.d, scaledD);
             distance = vecLength(3, scaledD);
